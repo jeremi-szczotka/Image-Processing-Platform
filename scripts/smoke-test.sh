@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+# Smoke test: exercises the full upload → metadata → download flow against a running API service.
+# Usage: API_URL=http://localhost:8080 bash scripts/smoke-test.sh
+
+set -euo pipefail
+
+BASE_URL="${API_URL:-http://localhost:8080}"
+PASS=0
+FAIL=0
+SKIP=0
+
+ok()   { echo "  ✓ $*"; PASS=$((PASS+1)); }
+fail() { echo "  ✗ $*" >&2; FAIL=$((FAIL+1)); }
+skip() { echo "  ⊘ $*"; SKIP=$((SKIP+1)); }
+
+echo ""
+echo "=== Smoke test → ${BASE_URL} ==="
+echo ""
+
+# ── 0. Health check ───────────────────────────────────────────────────────────
+echo "[ 0 ] Health check"
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/healthz")
+[ "${STATUS}" = "200" ] && ok "GET /healthz → 200" || { fail "GET /healthz → ${STATUS}"; exit 1; }
+
+# ── 1. Create test image ──────────────────────────────────────────────────────
+echo ""
+echo "[ 1 ] Preparing test image"
+TEST_IMAGE=$(mktemp /tmp/smoke_test_XXXXXX.jpg)
+trap 'rm -f "${TEST_IMAGE}"' EXIT
+
+if python3 - <<'PYEOF' 2>/dev/null
+import sys, io
+try:
+    from PIL import Image
+    img = Image.new("RGB", (200, 150), color=(180, 80, 40))
+    img.save(sys.argv[1] if len(sys.argv) > 1 else "/dev/stdout", "JPEG")
+except ImportError:
+    sys.exit(1)
+PYEOF
+then
+  python3 -c "
+import sys
+from PIL import Image
+img = Image.new('RGB', (200, 150), color=(180, 80, 40))
+img.save('${TEST_IMAGE}', 'JPEG')
+"
+  ok "Test JPEG created via Pillow (200×150)"
+else
+  # Fallback: generate via Go
+  if command -v go &>/dev/null; then
+    go run - "${TEST_IMAGE}" <<'GOEOF' 2>/dev/null
+package main
+
+import (
+  "image"
+  "image/color"
+  "image/jpeg"
+  "os"
+)
+
+func main() {
+  img := image.NewRGBA(image.Rect(0, 0, 200, 150))
+  for y := 0; y < 150; y++ {
+    for x := 0; x < 200; x++ {
+      img.Set(x, y, color.RGBA{R: 180, G: 80, B: 40, A: 255})
+    }
+  }
+  f, _ := os.Create(os.Args[1])
+  defer f.Close()
+  jpeg.Encode(f, img, nil)
+}
+GOEOF
+    ok "Test JPEG created via Go (200×150)"
+  else
+    skip "Cannot create test image (install Pillow: pip install Pillow)"
+    echo ""
+    echo "Result: SKIP (0 pass, 0 fail, ${SKIP} skipped)"
+    exit 0
+  fi
+fi
+
+# ── 2. Upload ─────────────────────────────────────────────────────────────────
+echo ""
+echo "[ 2 ] Upload image"
+UPLOAD_RESP=$(curl -sf -X POST "${BASE_URL}/api/v1/images" \
+  -F "image=@${TEST_IMAGE}" 2>&1) || { fail "Upload request failed"; exit 1; }
+
+IMAGE_ID=$(echo "${UPLOAD_RESP}" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])" 2>/dev/null) || \
+  { fail "Cannot parse image ID from: ${UPLOAD_RESP}"; exit 1; }
+ok "POST /api/v1/images → 201, id=${IMAGE_ID}"
+
+# ── 3. Metadata ───────────────────────────────────────────────────────────────
+echo ""
+echo "[ 3 ] Get metadata"
+META=$(curl -sf "${BASE_URL}/api/v1/images/${IMAGE_ID}")
+python3 - <<PYEOF
+import json, sys
+d = json.loads('''${META}''')
+assert d["id"] == "${IMAGE_ID}", f"wrong id: {d['id']}"
+assert d["content_type"] == "image/jpeg", f"wrong type: {d['content_type']}"
+assert d["width"] == 200, f"wrong width: {d['width']}"
+assert d["height"] == 150, f"wrong height: {d['height']}"
+PYEOF
+ok "GET /api/v1/images/${IMAGE_ID} → correct metadata (200×150, image/jpeg)"
+
+# ── 4. Download redirect ──────────────────────────────────────────────────────
+echo ""
+echo "[ 4 ] Download redirect"
+REDIR_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+  "${BASE_URL}/api/v1/images/${IMAGE_ID}/download")
+[ "${REDIR_STATUS}" = "302" ] && ok "GET .../download → 302 redirect" || \
+  fail "Expected 302, got ${REDIR_STATUS}"
+
+# ── 5. 404 for unknown image ──────────────────────────────────────────────────
+echo ""
+echo "[ 5 ] 404 for unknown image"
+NOT_FOUND=$(curl -s -o /dev/null -w "%{http_code}" \
+  "${BASE_URL}/api/v1/images/00000000-0000-0000-0000-000000000000")
+[ "${NOT_FOUND}" = "404" ] && ok "GET /images/00000000-… → 404" || \
+  fail "Expected 404, got ${NOT_FOUND}"
+
+# ── 6. Invalid MIME type rejected ────────────────────────────────────────────
+echo ""
+echo "[ 6 ] Reject non-image file"
+FAKE=$(mktemp /tmp/smoke_fake_XXXXXX.jpg)
+echo "not an image" > "${FAKE}"
+REJECT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+  -X POST "${BASE_URL}/api/v1/images" -F "image=@${FAKE}")
+rm -f "${FAKE}"
+[ "${REJECT_STATUS}" = "400" ] && ok "POST with text file → 400" || \
+  fail "Expected 400, got ${REJECT_STATUS}"
+
+# ── Summary ───────────────────────────────────────────────────────────────────
+echo ""
+echo "────────────────────────────────────────"
+echo "  Pass: ${PASS}  Fail: ${FAIL}  Skip: ${SKIP}"
+echo "────────────────────────────────────────"
+echo ""
+
+[ "${FAIL}" -eq 0 ] && echo "All smoke tests passed ✓" && exit 0 || exit 1

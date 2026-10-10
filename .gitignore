@@ -1,0 +1,49 @@
+# Go
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
+vendor/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Environment — never commit secrets
+.env
+*.env.local
+
+# IDE
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Kubernetes secrets (keep only secrets.example/)
+infrastructure/kubernetes/secrets/
+
+# Test outputs
+tests/load/results/
+/tmp/
+
+# Superpowers workspace (dev tooling scratch)
+.superpowers/
+CLAUDE.md
+# Thesis implementation plan (internal working document)
+plan_implementacji_platformy_przetwarzania_obrazow.md
