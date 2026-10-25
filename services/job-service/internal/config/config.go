@@ -26,7 +26,11 @@ func Load() (*Config, error) {
 	if cfg.RabbitMQURL, err = requireEnv("RABBITMQ_URL"); err != nil {
 		return nil, err
 	}
-	ms, _ := strconv.ParseInt(getEnv("OUTBOX_POLL_MS", "500"), 10, 64)
+	const defaultPollMS = 500
+	ms, err := strconv.ParseInt(getEnv("OUTBOX_POLL_MS", "500"), 10, 64)
+	if err != nil || ms <= 0 {
+		ms = defaultPollMS
+	}
 	cfg.OutboxPollInterval = time.Duration(ms) * time.Millisecond
 	return cfg, nil
 }

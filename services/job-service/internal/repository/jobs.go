@@ -42,11 +42,12 @@ func (r *PostgresJobRepository) CreateWithOutbox(ctx context.Context, job *domai
 		return fmt.Errorf("marshal parameters: %w", err)
 	}
 
-	_, err = tx.Exec(ctx, `
+	err = tx.QueryRow(ctx, `
 		INSERT INTO jobs (id, image_id, operation, parameters, status)
-		VALUES ($1, $2, $3, $4, 'PENDING')`,
+		VALUES ($1, $2, $3, $4, 'PENDING')
+		RETURNING created_at, updated_at`,
 		job.ID, job.ImageID, job.Operation, paramsJSON,
-	)
+	).Scan(&job.CreatedAt, &job.UpdatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23503" {
