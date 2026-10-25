@@ -3,6 +3,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -28,9 +29,35 @@ func NewPostgresOutboxRepository(db *pgxpool.Pool) *PostgresOutboxRepository {
 }
 
 func (r *PostgresOutboxRepository) FetchUnpublished(ctx context.Context, limit int) ([]OutboxEvent, error) {
-	panic("not implemented — see Task 5")
+	rows, err := r.db.Query(ctx, `
+		SELECT id, job_id, payload
+		FROM outbox_events
+		WHERE published = false
+		ORDER BY created_at ASC
+		LIMIT $1`, limit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("fetch unpublished: %w", err)
+	}
+	defer rows.Close()
+
+	var events []OutboxEvent
+	for rows.Next() {
+		var ev OutboxEvent
+		if err := rows.Scan(&ev.ID, &ev.JobID, &ev.Payload); err != nil {
+			return nil, fmt.Errorf("scan outbox event: %w", err)
+		}
+		events = append(events, ev)
+	}
+	return events, rows.Err()
 }
 
 func (r *PostgresOutboxRepository) MarkPublished(ctx context.Context, eventID uuid.UUID) error {
-	panic("not implemented — see Task 5")
+	_, err := r.db.Exec(ctx,
+		`UPDATE outbox_events SET published = true WHERE id = $1`, eventID,
+	)
+	if err != nil {
+		return fmt.Errorf("mark published %s: %w", eventID, err)
+	}
+	return nil
 }
