@@ -20,6 +20,8 @@ import (
 	"image-platform/api-service/internal/storage"
 )
 
+// allowedContentTypes is the set of MIME types that the service accepts for upload.
+// Content type is detected from the file bytes, not from the filename or the declared MIME type.
 var allowedContentTypes = map[string]bool{
 	"image/jpeg": true,
 	"image/png":  true,
@@ -34,6 +36,7 @@ type ImageHandler struct {
 	log  *slog.Logger
 }
 
+// NewImageHandler returns an ImageHandler wired with the given repository, storage, config, and logger.
 func NewImageHandler(
 	repo repository.ImageRepository,
 	stor storage.Storage,
@@ -43,7 +46,10 @@ func NewImageHandler(
 	return &ImageHandler{repo: repo, stor: stor, cfg: cfg, log: log}
 }
 
-// Upload handles POST /api/v1/images
+// Upload handles POST /api/v1/images.
+// It detects the real content type from the file bytes (not the filename), enforces the max-megapixels
+// pixel-bomb guard via image.DecodeConfig, stores the file in object storage, and persists the metadata
+// to the database. Returns 201 Created with the image metadata JSON on success.
 func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, h.cfg.MaxUploadBytes)
 
@@ -127,7 +133,8 @@ func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusCreated, img)
 }
 
-// GetByID handles GET /api/v1/images/{id}
+// GetByID handles GET /api/v1/images/{id}.
+// Returns 200 OK with image metadata JSON, or 404 if the image is not found.
 func (h *ImageHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -149,8 +156,9 @@ func (h *ImageHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, img)
 }
 
-// Download handles GET /api/v1/images/{id}/download
-// Redirects the client to a short-lived presigned MinIO URL.
+// Download handles GET /api/v1/images/{id}/download.
+// It looks up the image's object key and issues a 302 redirect to a short-lived presigned MinIO URL,
+// so the client downloads the file directly from object storage without proxying through this service.
 func (h *ImageHandler) Download(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -179,6 +187,7 @@ func (h *ImageHandler) Download(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, presignedURL, http.StatusFound)
 }
 
+// extensionFor maps a MIME type to its canonical file extension, or returns an empty string for unknown types.
 func extensionFor(contentType string) string {
 	switch contentType {
 	case "image/jpeg":

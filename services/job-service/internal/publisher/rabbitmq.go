@@ -8,13 +8,18 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+// QueueName is the name of the durable RabbitMQ queue to which job events are published.
 const QueueName = "jobs"
 
+// RabbitMQPublisher is a Publisher backed by a single RabbitMQ connection and channel.
+// It uses publisher confirms to guarantee the broker acknowledged each message before returning.
 type RabbitMQPublisher struct {
 	conn    *amqp.Connection
 	channel *amqp.Channel
 }
 
+// NewRabbitMQPublisher dials RabbitMQ, opens a channel, declares the durable jobs queue,
+// and enables publisher confirms. It returns an error if any step fails.
 func NewRabbitMQPublisher(url string) (*RabbitMQPublisher, error) {
 	conn, err := amqp.Dial(url)
 	if err != nil {
@@ -62,6 +67,7 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, body []byte) error {
 	return nil
 }
 
+// Close gracefully closes the channel and the underlying connection.
 func (p *RabbitMQPublisher) Close() error {
 	if err := p.channel.Close(); err != nil {
 		return err

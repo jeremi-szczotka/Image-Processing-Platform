@@ -1,4 +1,7 @@
 // services/job-service/internal/repository/jobs.go
+
+// Package repository provides PostgreSQL-backed implementations of the
+// job-service persistence interfaces.
 package repository
 
 import (
@@ -15,21 +18,29 @@ import (
 	"image-platform/job-service/internal/domain"
 )
 
+// ErrImageNotFound is returned by CreateWithOutbox when image_id references a non-existent image.
 var ErrImageNotFound = errors.New("image not found")
 
+// JobRepository persists jobs and reads them back.
+// PostgresJobRepository is the production implementation; tests may supply a stub.
 type JobRepository interface {
 	CreateWithOutbox(ctx context.Context, job *domain.Job, payload []byte) error
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.Job, error)
 }
 
+// PostgresJobRepository is the PostgreSQL-backed implementation of JobRepository.
 type PostgresJobRepository struct {
 	db *pgxpool.Pool
 }
 
+// NewPostgresJobRepository creates a PostgresJobRepository backed by the supplied connection pool.
 func NewPostgresJobRepository(db *pgxpool.Pool) *PostgresJobRepository {
 	return &PostgresJobRepository{db: db}
 }
 
+// CreateWithOutbox inserts the job and its outbox event in a single transaction so
+// the two records can never diverge. It returns ErrImageNotFound when image_id
+// references a non-existent image (PostgreSQL FK violation, error code 23503).
 func (r *PostgresJobRepository) CreateWithOutbox(ctx context.Context, job *domain.Job, payload []byte) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
@@ -71,6 +82,8 @@ func (r *PostgresJobRepository) CreateWithOutbox(ctx context.Context, job *domai
 	return nil
 }
 
+// GetByID retrieves a single job by its UUID.
+// It returns domain.ErrNotFound when no row with the given ID exists.
 func (r *PostgresJobRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Job, error) {
 	job := &domain.Job{}
 	var paramsJSON []byte

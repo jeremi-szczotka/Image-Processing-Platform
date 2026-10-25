@@ -1,3 +1,4 @@
+// Package config loads api-service runtime configuration from environment variables.
 package config
 
 import (
@@ -7,6 +8,9 @@ import (
 	"time"
 )
 
+// Config holds the runtime configuration loaded from environment variables.
+// Required variables (DATABASE_URL, MINIO_*) cause Load to return an error if absent;
+// optional variables fall back to safe defaults.
 type Config struct {
 	Port             string
 	DatabaseURL      string
@@ -14,11 +18,17 @@ type Config struct {
 	MinioAccessKey   string
 	MinioSecretKey   string
 	MinioUseSSL      bool
+	// MaxUploadBytes is the maximum accepted request body size in bytes, derived from MAX_UPLOAD_SIZE_MB.
 	MaxUploadBytes   int64
+	// MaxMegapixels is the maximum total pixel count (width × height) allowed before an upload is rejected
+	// to prevent decompression "pixel bomb" attacks. Configured via MAX_MEGAPIXELS.
 	MaxMegapixels    int64
+	// PresignedURLTTL controls how long presigned download URLs remain valid. Configured via PRESIGNED_URL_TTL_MINUTES.
 	PresignedURLTTL  time.Duration
 }
 
+// Load reads configuration from the environment and returns a populated Config.
+// It returns an error if any required variable is absent.
 func Load() (*Config, error) {
 	cfg := &Config{
 		Port: getEnv("API_PORT", "8080"),
@@ -52,6 +62,7 @@ func Load() (*Config, error) {
 	return cfg, nil
 }
 
+// getEnv returns the value of the environment variable key, or fallback if the variable is unset or empty.
 func getEnv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
@@ -59,6 +70,7 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
+// requireEnv returns the value of the environment variable key, or an error if the variable is unset or empty.
 func requireEnv(key string) (string, error) {
 	if v := os.Getenv(key); v != "" {
 		return v, nil

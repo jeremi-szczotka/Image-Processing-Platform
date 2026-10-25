@@ -14,22 +14,28 @@ import (
 	"image-platform/job-service/internal/repository"
 )
 
+// JobHandler handles HTTP requests for job creation and retrieval.
 type JobHandler struct {
 	repo repository.JobRepository
 	log  *slog.Logger
 }
 
+// NewJobHandler creates a JobHandler backed by the supplied repository and logger.
 func NewJobHandler(repo repository.JobRepository, log *slog.Logger) *JobHandler {
 	return &JobHandler{repo: repo, log: log}
 }
 
+// createJobRequest is the JSON body expected by POST /api/v1/jobs.
 type createJobRequest struct {
 	ImageID    uuid.UUID      `json:"image_id"`
 	Operation  string         `json:"operation"`
 	Parameters map[string]any `json:"parameters"`
 }
 
-// Create handles POST /api/v1/jobs
+// Create handles POST /api/v1/jobs. It validates the request body, persists the job
+// together with its outbox event in a single transaction, and returns 201 with the
+// new job. Returns 400 when image_id is missing, the operation is unknown, or the
+// referenced image does not exist.
 func (h *JobHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req createJobRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -81,7 +87,8 @@ func (h *JobHandler) Create(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusCreated, job)
 }
 
-// GetByID handles GET /api/v1/jobs/{id}
+// GetByID handles GET /api/v1/jobs/{id}. It returns 404 when no job matches
+// the given UUID and 400 when the UUID cannot be parsed.
 func (h *JobHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {

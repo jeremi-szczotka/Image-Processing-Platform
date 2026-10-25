@@ -10,10 +10,13 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
+// MinioStorage implements Storage using the MinIO (S3-compatible) object store.
 type MinioStorage struct {
 	client *minio.Client
 }
 
+// NewMinioStorage creates a MinioStorage connected to the given endpoint using static credentials.
+// useSSL controls whether the connection uses TLS.
 func NewMinioStorage(endpoint, accessKey, secretKey string, useSSL bool) (*MinioStorage, error) {
 	client, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
@@ -42,6 +45,8 @@ func (s *MinioStorage) EnsureBuckets(ctx context.Context) error {
 	return nil
 }
 
+// Upload stores the contents of reader as objectKey in bucket.
+// size must be the exact byte length of reader; the MinIO client uses it for the Content-Length header.
 func (s *MinioStorage) Upload(ctx context.Context, bucket, objectKey string, reader io.Reader, size int64, contentType string) error {
 	_, err := s.client.PutObject(ctx, bucket, objectKey, reader, size, minio.PutObjectOptions{
 		ContentType: contentType,
@@ -52,6 +57,8 @@ func (s *MinioStorage) Upload(ctx context.Context, bucket, objectKey string, rea
 	return nil
 }
 
+// PresignedDownloadURL returns a time-limited URL the client can GET directly from MinIO
+// without any further server involvement. The URL expires after expiry.
 func (s *MinioStorage) PresignedDownloadURL(ctx context.Context, bucket, objectKey string, expiry time.Duration) (string, error) {
 	u, err := s.client.PresignedGetObject(ctx, bucket, objectKey, expiry, nil)
 	if err != nil {

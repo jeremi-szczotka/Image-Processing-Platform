@@ -1,3 +1,6 @@
+// Package main is the entry point for the api-service HTTP server.
+// It wires together configuration, database, object storage, and HTTP routing,
+// then starts listening for requests.
 package main
 
 import (
