@@ -5,6 +5,7 @@
 set -euo pipefail
 
 BASE_URL="${API_URL:-http://localhost:8080}"
+JOB_URL="${JOB_SERVICE_URL:-http://localhost:8081}"
 PASS=0
 FAIL=0
 SKIP=0
@@ -28,27 +29,13 @@ echo "[ 1 ] Preparing test image"
 TEST_IMAGE=$(mktemp /tmp/smoke_test_XXXXXX.jpg)
 trap 'rm -f "${TEST_IMAGE}"' EXIT
 
-if python3 - <<'PYEOF' 2>/dev/null
-import sys, io
-try:
-    from PIL import Image
-    img = Image.new("RGB", (200, 150), color=(180, 80, 40))
-    img.save(sys.argv[1] if len(sys.argv) > 1 else "/dev/stdout", "JPEG")
-except ImportError:
-    sys.exit(1)
-PYEOF
-then
-  python3 -c "
-import sys
-from PIL import Image
-img = Image.new('RGB', (200, 150), color=(180, 80, 40))
-img.save('${TEST_IMAGE}', 'JPEG')
-"
+if python3 -c "from PIL import Image; Image.new('RGB',(200,150),(180,80,40)).save('${TEST_IMAGE}','JPEG')" 2>/dev/null; then
   ok "Test JPEG created via Pillow (200×150)"
-else
-  # Fallback: generate via Go
-  if command -v go &>/dev/null; then
-    go run - "${TEST_IMAGE}" <<'GOEOF' 2>/dev/null
+elif command -v go &>/dev/null; then
+  # Fallback: generate via Go. `go run -` (stdin) is unsupported, so write the
+  # program to a temp file and run that.
+  GOSRC="$(mktemp -d)/mkimg.go"
+  cat > "${GOSRC}" <<'GOEOF'
 package main
 
 import (
@@ -70,13 +57,19 @@ func main() {
   jpeg.Encode(f, img, nil)
 }
 GOEOF
+  if go run "${GOSRC}" "${TEST_IMAGE}" 2>/dev/null; then
     ok "Test JPEG created via Go (200×150)"
   else
-    skip "Cannot create test image (install Pillow: pip install Pillow)"
+    skip "Cannot create test image via Go"
     echo ""
     echo "Result: SKIP (0 pass, 0 fail, ${SKIP} skipped)"
     exit 0
   fi
+else
+  skip "Cannot create test image (install Pillow: pip install Pillow)"
+  echo ""
+  echo "Result: SKIP (0 pass, 0 fail, ${SKIP} skipped)"
+  exit 0
 fi
 
 # ── 2. Upload ─────────────────────────────────────────────────────────────────
@@ -129,6 +122,55 @@ REJECT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
 rm -f "${FAKE}"
 [ "${REJECT_STATUS}" = "400" ] && ok "POST with text file → 400" || \
   fail "Expected 400, got ${REJECT_STATUS}"
+
+# ── 7. Job service health check ───────────────────────────────────────────────
+echo ""
+echo "[ 7 ] Job service health check"
+JOB_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "${JOB_URL}/healthz")
+[ "${JOB_HEALTH}" = "200" ] && ok "GET ${JOB_URL}/healthz → 200" || \
+  { fail "job-service not reachable (${JOB_HEALTH}) — is it running?"; }
+
+# ── 8. Create a job ───────────────────────────────────────────────────────────
+echo ""
+echo "[ 8 ] Create job"
+JOB_RESP=$(curl -sf -X POST "${JOB_URL}/api/v1/jobs" \
+  -H "Content-Type: application/json" \
+  -d '{"image_id":"'"${IMAGE_ID}"'","operation":"resize","parameters":{"width":800}}' 2>&1) || \
+  { fail "Job creation request failed: ${JOB_RESP}"; }
+
+if [ -n "${JOB_RESP}" ]; then
+  JOB_ID=$(echo "${JOB_RESP}" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])" 2>/dev/null) || \
+    { fail "Cannot parse job ID from: ${JOB_RESP}"; }
+  ok "POST /api/v1/jobs → 201, id=${JOB_ID}"
+
+  # ── 9. Get job status ───────────────────────────────────────────────────────
+  echo ""
+  echo "[ 9 ] Get job status"
+  JOB_STATUS_RESP=$(curl -sf "${JOB_URL}/api/v1/jobs/${JOB_ID}") || \
+    { fail "GET /api/v1/jobs/${JOB_ID} failed"; }
+  JOB_STATUS=$(echo "${JOB_STATUS_RESP}" | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])" 2>/dev/null) || \
+    { fail "Cannot parse status from: ${JOB_STATUS_RESP}"; }
+  [ "${JOB_STATUS}" = "PENDING" ] && ok "GET /api/v1/jobs/${JOB_ID} → status=PENDING" || \
+    fail "Expected status=PENDING, got ${JOB_STATUS}"
+
+  # ── 10. 404 for unknown job ─────────────────────────────────────────────────
+  echo ""
+  echo "[ 10 ] 404 for unknown job"
+  JOB_404=$(curl -s -o /dev/null -w "%{http_code}" \
+    "${JOB_URL}/api/v1/jobs/00000000-0000-0000-0000-000000000000")
+  [ "${JOB_404}" = "404" ] && ok "GET /api/v1/jobs/00000000-… → 404" || \
+    fail "Expected 404, got ${JOB_404}"
+
+  # ── 11. Invalid operation rejected ─────────────────────────────────────────
+  echo ""
+  echo "[ 11 ] Reject invalid operation"
+  BAD_OP=$(curl -s -o /dev/null -w "%{http_code}" \
+    -X POST "${JOB_URL}/api/v1/jobs" \
+    -H "Content-Type: application/json" \
+    -d '{"image_id":"'"${IMAGE_ID}"'","operation":"explode"}')
+  [ "${BAD_OP}" = "400" ] && ok "POST with invalid operation → 400" || \
+    fail "Expected 400, got ${BAD_OP}"
+fi
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 echo ""

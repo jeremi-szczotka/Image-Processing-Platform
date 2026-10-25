@@ -2,8 +2,9 @@
         test test-unit test-integration lint build \
         smoke-test migrate-status
 
-COMPOSE = docker compose -f infrastructure/docker-compose.yml
-API_DIR = services/api-service
+COMPOSE  = docker compose -f infrastructure/docker-compose.yml
+API_DIR  = services/api-service
+JOB_DIR  = services/job-service
 
 help:
 	@echo ""
@@ -25,6 +26,7 @@ help:
 setup:
 	@[ -f .env ] || (cp .env.example .env && echo "Created .env from .env.example — review and adjust if needed")
 	@cd $(API_DIR) && go mod tidy
+	@cd $(JOB_DIR) && go mod tidy
 	@chmod +x scripts/*.sh
 	@echo "Setup complete."
 
@@ -46,14 +48,19 @@ logs:
 build:
 	@echo "→ Building api-service..."
 	@cd $(API_DIR) && go build ./cmd/api/...
+	@echo "→ Building job-service..."
+	@cd $(JOB_DIR) && go build ./cmd/server/...
 	@echo "Build OK"
 
 lint:
 	@cd $(API_DIR) && go vet ./...
+	@cd $(JOB_DIR) && go vet ./...
 
 test-unit:
 	@echo "→ Unit tests: api-service"
 	@cd $(API_DIR) && go test ./... -v -count=1 -race
+	@echo "→ Unit tests: job-service"
+	@cd $(JOB_DIR) && go test ./... -v -count=1 -race
 
 test-integration: smoke-test
 
