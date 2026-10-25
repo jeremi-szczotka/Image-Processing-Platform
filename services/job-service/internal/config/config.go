@@ -1,5 +1,3 @@
-// services/job-service/internal/config/config.go
-
 // Package config loads and validates job-service runtime configuration
 // from environment variables.
 package config
@@ -13,9 +11,9 @@ import (
 
 // Config holds the runtime configuration loaded from environment variables.
 type Config struct {
-	Port               string
-	DatabaseURL        string
-	RabbitMQURL        string
+	Port        string
+	DatabaseURL string
+	RabbitMQURL string
 	// OutboxPollInterval controls how often the outbox relay goroutine queries
 	// for unpublished events; defaults to 500 ms when OUTBOX_POLL_MS is absent or invalid.
 	OutboxPollInterval time.Duration

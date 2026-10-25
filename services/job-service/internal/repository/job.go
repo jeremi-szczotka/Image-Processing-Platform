@@ -1,5 +1,3 @@
-// services/job-service/internal/repository/jobs.go
-
 // Package repository provides PostgreSQL-backed implementations of the
 // job-service persistence interfaces.
 package repository

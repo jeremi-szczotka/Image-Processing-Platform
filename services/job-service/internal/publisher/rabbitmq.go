@@ -1,4 +1,3 @@
-// services/job-service/internal/publisher/rabbitmq.go
 package publisher
 
 import (

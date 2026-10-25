@@ -1,4 +1,3 @@
-// services/job-service/internal/handlers/jobs.go
 package handlers
 
 import (

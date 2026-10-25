@@ -1,5 +1,3 @@
-// services/job-service/cmd/server/main.go
-
 // Package main starts the job-service HTTP server, wiring together
 // configuration, PostgreSQL, RabbitMQ, and the outbox relay goroutine.
 package main

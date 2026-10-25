@@ -1,4 +1,3 @@
-// services/job-service/internal/config/config_test.go
 package config_test
 
 import (

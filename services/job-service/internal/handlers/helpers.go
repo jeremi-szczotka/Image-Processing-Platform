@@ -1,5 +1,3 @@
-// services/job-service/internal/handlers/helpers.go
-
 // Package handlers contains the HTTP handlers for the job-service REST API.
 package handlers
 

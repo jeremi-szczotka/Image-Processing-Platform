@@ -1,5 +1,3 @@
-// services/job-service/internal/outbox/relay.go
-
 // Package outbox implements the transactional-outbox relay that polls PostgreSQL
 // for unpublished events and forwards them to RabbitMQ, providing at-least-once delivery.
 package outbox
@@ -20,8 +18,8 @@ type Relay struct {
 	outbox    repository.OutboxRepository
 	publisher publisher.Publisher
 	// interval is how often the relay polls for unpublished outbox events.
-	interval  time.Duration
-	log       *slog.Logger
+	interval time.Duration
+	log      *slog.Logger
 }
 
 // NewRelay creates a Relay with the supplied outbox repository, publisher, poll interval, and logger.

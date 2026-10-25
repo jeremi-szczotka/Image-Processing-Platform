@@ -1,4 +1,3 @@
-// services/job-service/internal/handlers/jobs_test.go
 package handlers_test
 
 import (
@@ -148,10 +147,10 @@ func TestCreate_InvalidJSON_Returns400(t *testing.T) {
 func TestGetByID_ExistingJob_Returns200(t *testing.T) {
 	repo := newMockRepo()
 	job := &domain.Job{
-		ID:        uuid.New(),
-		ImageID:   uuid.New(),
-		Operation: "resize",
-		Status:    "PENDING",
+		ID:         uuid.New(),
+		ImageID:    uuid.New(),
+		Operation:  "resize",
+		Status:     "PENDING",
 		Parameters: map[string]any{},
 	}
 	repo.jobs[job.ID] = job

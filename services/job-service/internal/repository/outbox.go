@@ -1,4 +1,3 @@
-// services/job-service/internal/repository/outbox.go
 package repository
 
 import (

@@ -1,5 +1,3 @@
-// services/job-service/internal/publisher/publisher.go
-
 // Package publisher defines the Publisher interface and its RabbitMQ implementation
 // used by the outbox relay to forward job events to a message broker.
 package publisher

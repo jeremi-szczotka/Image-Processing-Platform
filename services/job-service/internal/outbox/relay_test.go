@@ -1,4 +1,3 @@
-// services/job-service/internal/outbox/relay_test.go
 package outbox_test
 
 import (
