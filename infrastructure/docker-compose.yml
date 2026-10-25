@@ -80,11 +80,23 @@ services:
       minio:
         condition: service_healthy
 
-  # job-service:   # chapter 2
-  #   build:
-  #     context: ../services/job-service
-  #     dockerfile: Dockerfile
-  #   ...
+  job-service:
+    build:
+      context: ../services/job-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      JOB_SERVICE_PORT: ${JOB_SERVICE_PORT:-8081}
+      DATABASE_URL: postgres://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-image_platform}?sslmode=disable
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-guest}:${RABBITMQ_DEFAULT_PASS:-guest}@rabbitmq:5672/
+      OUTBOX_POLL_MS: ${OUTBOX_POLL_MS:-500}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   # processing-worker:   # chapter 3
   #   build:
