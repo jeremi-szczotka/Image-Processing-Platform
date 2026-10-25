@@ -29,27 +29,13 @@ echo "[ 1 ] Preparing test image"
 TEST_IMAGE=$(mktemp /tmp/smoke_test_XXXXXX.jpg)
 trap 'rm -f "${TEST_IMAGE}"' EXIT
 
-if python3 - <<'PYEOF' 2>/dev/null
-import sys, io
-try:
-    from PIL import Image
-    img = Image.new("RGB", (200, 150), color=(180, 80, 40))
-    img.save(sys.argv[1] if len(sys.argv) > 1 else "/dev/stdout", "JPEG")
-except ImportError:
-    sys.exit(1)
-PYEOF
-then
-  python3 -c "
-import sys
-from PIL import Image
-img = Image.new('RGB', (200, 150), color=(180, 80, 40))
-img.save('${TEST_IMAGE}', 'JPEG')
-"
+if python3 -c "from PIL import Image; Image.new('RGB',(200,150),(180,80,40)).save('${TEST_IMAGE}','JPEG')" 2>/dev/null; then
   ok "Test JPEG created via Pillow (200×150)"
-else
-  # Fallback: generate via Go
-  if command -v go &>/dev/null; then
-    go run - "${TEST_IMAGE}" <<'GOEOF' 2>/dev/null
+elif command -v go &>/dev/null; then
+  # Fallback: generate via Go. `go run -` (stdin) is unsupported, so write the
+  # program to a temp file and run that.
+  GOSRC="$(mktemp -d)/mkimg.go"
+  cat > "${GOSRC}" <<'GOEOF'
 package main
 
 import (
@@ -71,13 +57,19 @@ func main() {
   jpeg.Encode(f, img, nil)
 }
 GOEOF
+  if go run "${GOSRC}" "${TEST_IMAGE}" 2>/dev/null; then
     ok "Test JPEG created via Go (200×150)"
   else
-    skip "Cannot create test image (install Pillow: pip install Pillow)"
+    skip "Cannot create test image via Go"
     echo ""
     echo "Result: SKIP (0 pass, 0 fail, ${SKIP} skipped)"
     exit 0
   fi
+else
+  skip "Cannot create test image (install Pillow: pip install Pillow)"
+  echo ""
+  echo "Result: SKIP (0 pass, 0 fail, ${SKIP} skipped)"
+  exit 0
 fi
 
 # ── 2. Upload ─────────────────────────────────────────────────────────────────
