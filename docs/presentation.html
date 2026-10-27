@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Processing Platform — Engineering Thesis</title>
+  <link rel="stylesheet" href="reveal.css" />
+  <link rel="stylesheet" href="theme-black.css" />
+  <style>
+    :root {
+      --accent: #4f9cf9;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --gray: #6b7280;
+      --bg-card: rgba(255,255,255,0.05);
+      --border: rgba(255,255,255,0.12);
+    }
+    .reveal { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .reveal h1 { font-size: 1.9rem; font-weight: 700; color: #fff; }
+    .reveal h2 { font-size: 1.3rem; font-weight: 600; color: var(--accent); border-bottom: 2px solid var(--border); padding-bottom: 0.2em; margin-bottom: 0.45em; }
+    .reveal h3 { font-size: 0.88rem; color: var(--accent2); margin-bottom: 0.25em; }
+    .reveal p, .reveal li { font-size: 0.72rem; line-height: 1.55; }
+    .reveal ul { list-style: none; padding: 0; }
+    .reveal ul li::before { content: "›"; color: var(--accent); margin-right: 0.4em; font-weight: bold; }
+    /* ensure slides never overflow */
+    .reveal .slides section { box-sizing: border-box; overflow: hidden; padding: 0.6em 1em; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6em; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5em; }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.55em 0.75em;
+    }
+    .tag {
+      display: inline-block;
+      font-size: 0.6rem;
+      padding: 0.12em 0.5em;
+      border-radius: 999px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .tag-go    { background: #00acd720; color: #00acd7; border: 1px solid #00acd750; }
+    .tag-py    { background: #3b7ead20; color: #6fb3d2; border: 1px solid #6fb3d250; }
+    .tag-pg    { background: #33608620; color: #699abb; border: 1px solid #699abb50; }
+    .tag-mq    { background: #f6821f20; color: #f6821f; border: 1px solid #f6821f50; }
+    .tag-s3    { background: #ff990020; color: #ffaa33; border: 1px solid #ffaa3350; }
+    .tag-k8s   { background: #326ce520; color: #5a8fd8; border: 1px solid #5a8fd850; }
+    .tag-js    { background: #f7df1e20; color: #f7df1e; border: 1px solid #f7df1e50; }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.3em 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.7rem;
+    }
+    .status-row:last-child { border-bottom: none; }
+    .pill { font-size: 0.6rem; padding: 0.12em 0.45em; border-radius: 999px; font-weight: 700; }
+    .pill-done { background: #34d39930; color: #34d399; }
+    .pill-todo { background: #6b728030; color: #9ca3af; }
+
+    .tech-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      padding: 0.28em 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.68rem;
+    }
+    .tech-row:last-child { border-bottom: none; }
+    .tech-label { color: #d1d5db; min-width: 110px; }
+    .tech-value { color: #fff; font-weight: 500; }
+
+    .highlight-box {
+      background: linear-gradient(135deg, #1e3a5f30, #4f9cf920);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 0.55em 0.75em;
+    }
+    .highlight-box p { color: #93c5fd; font-size: 0.7rem; margin: 0; }
+
+    .note-box {
+      background: rgba(167,139,250,0.07);
+      border-left: 3px solid var(--accent2);
+      border-radius: 0 6px 6px 0;
+      padding: 0.45em 0.7em;
+      font-size: 0.68rem;
+      color: #c4b5fd;
+    }
+    .warn-box {
+      background: rgba(251,191,36,0.07);
+      border-left: 3px solid var(--yellow);
+      border-radius: 0 6px 6px 0;
+      padding: 0.45em 0.7em;
+      font-size: 0.68rem;
+      color: #fde68a;
+    }
+    .success-box {
+      background: rgba(52,211,153,0.07);
+      border-left: 3px solid var(--green);
+      border-radius: 0 6px 6px 0;
+      padding: 0.45em 0.7em;
+      font-size: 0.68rem;
+      color: #a7f3d0;
+    }
+
+    svg text { font-family: 'Segoe UI', system-ui, sans-serif; }
+    code { background: rgba(255,255,255,0.08); padding: 0.08em 0.28em; border-radius: 3px; font-size: 0.82em; }
+    /* compact flex columns */
+    .col-stack { display:flex; flex-direction:column; gap:0.45em; }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 1 — TITLE
+══════════════════════════════════════════════════════════ -->
+<section>
+  <div style="text-align:center; padding: 0.5em 0 0;">
+    <div style="font-size:3rem; margin-bottom:0.3em;">🖼️</div>
+    <h1>Image Processing Platform</h1>
+    <p style="color:#94a3b8; font-size:0.9rem; margin-top:0.5em;">
+      A scalable, asynchronous image processing platform<br/>
+      built on microservices and Kubernetes
+    </p>
+    <div style="margin-top:1.2em; display:inline-grid; grid-template-columns:1fr 1fr 1fr; gap:0.5em; text-align:left; min-width:560px;">
+      <div class="card" style="font-size:0.72rem; text-align:center;">
+        <div style="font-size:1.4rem;">⚙️</div>
+        <div style="color:#34d399; font-weight:600; margin-top:0.2em;">Microservices</div>
+        <div style="color:#6b7280;">Go + Python</div>
+      </div>
+      <div class="card" style="font-size:0.72rem; text-align:center;">
+        <div style="font-size:1.4rem;">📨</div>
+        <div style="color:#a78bfa; font-weight:600; margin-top:0.2em;">Async Queue</div>
+        <div style="color:#6b7280;">RabbitMQ + Outbox</div>
+      </div>
+      <div class="card" style="font-size:0.72rem; text-align:center;">
+        <div style="font-size:1.4rem;">☸️</div>
+        <div style="color:#4f9cf9; font-weight:600; margin-top:0.2em;">Kubernetes</div>
+        <div style="color:#6b7280;">HPA autoscaling</div>
+      </div>
+    </div>
+    <p style="color:#475569; font-size:0.7rem; margin-top:1em;">Engineering Thesis · 2026</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 2 — AGENDA
+══════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Agenda</h2>
+  <div class="grid-2">
+    <div>
+      <ul style="line-height:2.0;">
+        <li><span style="color:#4f9cf9; margin-right:0.5em;">01</span> Problem &amp; motivation</li>
+        <li><span style="color:#4f9cf9; margin-right:0.5em;">02</span> System overview &amp; architecture</li>
+        <li><span style="color:#4f9cf9; margin-right:0.5em;">03</span> Microservices deep dive (×3)</li>
+        <li><span style="color:#4f9cf9; margin-right:0.5em;">04</span> Technology stack</li>
+        <li><span style="color:#4f9cf9; margin-right:0.5em;">05</span> Technology explainers: MinIO · RabbitMQ · Outbox · SPA · HPA</li>
+        <li><span style="color:#4f9cf9; margin-right:0.5em;">06</span> End-to-end data flow</li>
+        <li><span style="color:#4f9cf9; margin-right:0.5em;">07</span> Data model</li>
+        <li><span style="color:#4f9cf9; margin-right:0.5em;">08</span> Key architectural decisions</li>
+        <li><span style="color:#4f9cf9; margin-right:0.5em;">09</span> Kubernetes &amp; HPA</li>
+        <li><span style="color:#4f9cf9; margin-right:0.5em;">10</span> Project status &amp; roadmap</li>
+      </ul>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:0.42em; justify-content:center;">
+      <div class="highlight-box">
+        <p><strong>Thesis goal:</strong> Design and implement a production-grade, horizontally scalable image processing platform that demonstrates distributed systems patterns — async messaging, transactional outbox, and cloud-native orchestration.</p>
+      </div>
+      <div class="note-box">
+        The platform is built incrementally across 5 chapters, each introducing a new architectural layer — from a bare REST API through workers, frontend, and Kubernetes.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 3 — PROBLEM
+══════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Problem &amp; Motivation</h2>
+  <div class="grid-2" style="margin-bottom:0.4em;">
+    <div class="card">
+      <h3>The Challenge</h3>
+      <ul>
+        <li>Modern SaaS applications process thousands of images per minute — resize, watermark, format conversion</li>
+        <li>Synchronous processing blocks the HTTP connection for seconds, degrading user experience</li>
+        <li>A monolithic architecture cannot scale image processing independently from the API</li>
+        <li>A single server crash can silently lose queued work with no recovery mechanism</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Requirements</h3>
+      <ul>
+        <li>REST API for file upload, metadata retrieval, and result download</li>
+        <li>Asynchronous processing — client gets an immediate <code>202 Accepted</code></li>
+        <li>Reliability — no job can be lost even if a service crashes mid-flight</li>
+        <li>Horizontal scaling — add more workers under load, remove them when idle</li>
+        <li>Security — reject malicious uploads before they reach the processing stage</li>
+      </ul>
+    </div>
+  </div>
+  <div class="warn-box">
+    <strong>The core problem:</strong> how do you decouple the "accept work" path from the "do work" path, guarantee delivery, and still scale each independently — without over-engineering a small team project?
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 4 — ARCHITECTURE OVERVIEW (diagram)
+══════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Architecture Overview</h2>
+  <div style="display:flex; gap:1em; align-items:flex-start;">
+    <div style="flex:0 0 auto;">
+      <svg width="570" height="330" viewBox="0 0 570 330" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr"  markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#4f9cf9"/></marker>
+          <marker id="arr2" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#a78bfa"/></marker>
+          <marker id="arr3" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#34d399"/></marker>
+          <marker id="arr4" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#fb923c"/></marker>
+        </defs>
+
+        <!-- Client -->
+        <rect x="5" y="128" width="75" height="44" rx="7" fill="#1e40af" stroke="#4f9cf9" stroke-width="1.5"/>
+        <text x="42" y="147" text-anchor="middle" fill="#93c5fd" font-size="10" font-weight="600">Client</text>
+        <text x="42" y="161" text-anchor="middle" fill="#60a5fa" font-size="8">Browser/CLI</text>
+
+        <!-- Ingress -->
+        <rect x="110" y="118" width="75" height="64" rx="7" fill="#1e1b4b" stroke="#818cf8" stroke-width="1.5"/>
+        <text x="147" y="143" text-anchor="middle" fill="#c7d2fe" font-size="10" font-weight="600">Ingress</text>
+        <text x="147" y="157" text-anchor="middle" fill="#a5b4fc" font-size="8">/images →</text>
+        <text x="147" y="170" text-anchor="middle" fill="#a5b4fc" font-size="8">/jobs →</text>
+
+        <!-- K8s border -->
+        <rect x="200" y="20" width="360" height="292" rx="12" fill="none" stroke="#326ce5" stroke-width="1" stroke-dasharray="5,4" opacity="0.5"/>
+        <text x="380" y="15" text-anchor="middle" fill="#5a8fd8" font-size="9">Kubernetes Cluster</text>
+
+        <!-- API Service -->
+        <rect x="215" y="70" width="95" height="52" rx="7" fill="#064e3b" stroke="#34d399" stroke-width="1.5"/>
+        <text x="262" y="93" text-anchor="middle" fill="#6ee7b7" font-size="10" font-weight="600">API Service</text>
+        <text x="262" y="106" text-anchor="middle" fill="#34d399" font-size="8">Go · :8080</text>
+        <text x="262" y="116" text-anchor="middle" fill="#34d399" font-size="8">upload / metadata</text>
+
+        <!-- Job Service -->
+        <rect x="215" y="178" width="95" height="52" rx="7" fill="#1c1917" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="262" y="201" text-anchor="middle" fill="#c4b5fd" font-size="10" font-weight="600">Job Service</text>
+        <text x="262" y="214" text-anchor="middle" fill="#a78bfa" font-size="8">Go · :8081</text>
+        <text x="262" y="224" text-anchor="middle" fill="#a78bfa" font-size="8">jobs + outbox</text>
+
+        <!-- PostgreSQL -->
+        <rect x="355" y="118" width="88" height="52" rx="7" fill="#1e3a5f" stroke="#699abb" stroke-width="1.5"/>
+        <text x="399" y="141" text-anchor="middle" fill="#93c5fd" font-size="10" font-weight="600">PostgreSQL</text>
+        <text x="399" y="154" text-anchor="middle" fill="#699abb" font-size="8">images · jobs</text>
+        <text x="399" y="165" text-anchor="middle" fill="#699abb" font-size="8">outbox_events</text>
+
+        <!-- Object Store -->
+        <rect x="355" y="40" width="88" height="48" rx="7" fill="#451a03" stroke="#f97316" stroke-width="1.5"/>
+        <text x="399" y="61" text-anchor="middle" fill="#fed7aa" font-size="10" font-weight="600">Object Store</text>
+        <text x="399" y="74" text-anchor="middle" fill="#f97316" font-size="8">S3 / MinIO</text>
+        <text x="399" y="84" text-anchor="middle" fill="#f97316" font-size="8">presigned URLs</text>
+
+        <!-- RabbitMQ -->
+        <rect x="355" y="210" width="88" height="48" rx="7" fill="#431407" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="399" y="231" text-anchor="middle" fill="#fdba74" font-size="10" font-weight="600">RabbitMQ</text>
+        <text x="399" y="244" text-anchor="middle" fill="#fb923c" font-size="8">AMQP</text>
+        <text x="399" y="255" text-anchor="middle" fill="#fb923c" font-size="8">prefetch = 1</text>
+
+        <!-- Workers -->
+        <rect x="478" y="195" width="72" height="52" rx="7" fill="#1a1a2e" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="514" y="217" text-anchor="middle" fill="#c4b5fd" font-size="10" font-weight="600">Workers</text>
+        <text x="514" y="230" text-anchor="middle" fill="#a78bfa" font-size="8">Python ×N</text>
+        <text x="514" y="242" text-anchor="middle" fill="#a78bfa" font-size="8">Pillow</text>
+
+        <!-- Frontend -->
+        <rect x="478" y="60" width="72" height="44" rx="7" fill="#1a2e1a" stroke="#86efac" stroke-width="1.5"/>
+        <text x="514" y="80" text-anchor="middle" fill="#bbf7d0" font-size="10" font-weight="600">Frontend</text>
+        <text x="514" y="93" text-anchor="middle" fill="#86efac" font-size="8">HTML/CSS/JS</text>
+        <text x="514" y="103" text-anchor="middle" fill="#86efac" font-size="8">SPA</text>
+
+        <!-- Arrows: client → ingress -->
+        <line x1="80" y1="150" x2="108" y2="150" stroke="#4f9cf9" stroke-width="1.5" marker-end="url(#arr)"/>
+        <!-- ingress → api -->
+        <line x1="185" y1="138" x2="213" y2="112" stroke="#4f9cf9" stroke-width="1.5" marker-end="url(#arr)"/>
+        <!-- ingress → job -->
+        <line x1="185" y1="162" x2="213" y2="192" stroke="#4f9cf9" stroke-width="1.5" marker-end="url(#arr)"/>
+        <!-- api → s3 -->
+        <line x1="310" y1="85" x2="353" y2="70" stroke="#34d399" stroke-width="1.5" marker-end="url(#arr3)"/>
+        <!-- api → pg -->
+        <line x1="310" y1="105" x2="353" y2="135" stroke="#34d399" stroke-width="1.5" marker-end="url(#arr3)"/>
+        <!-- job → pg -->
+        <line x1="310" y1="192" x2="353" y2="165" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arr2)"/>
+        <!-- job → rmq (outbox) -->
+        <line x1="310" y1="210" x2="353" y2="225" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arr2)"/>
+        <!-- rmq → workers -->
+        <line x1="443" y1="232" x2="476" y2="225" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arr4)"/>
+        <!-- workers → pg (direct) -->
+        <path d="M514 195 Q514 160 480 150 Q460 145 443 145" fill="none" stroke="#34d399" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr3)"/>
+        <!-- workers → s3 -->
+        <path d="M514 195 Q530 120 490 80 Q475 68 445 65" fill="none" stroke="#f97316" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr4)"/>
+
+        <!-- Labels -->
+        <text x="87" y="145" fill="#4f9cf9" font-size="8">HTTP</text>
+        <text x="315" y="126" fill="#34d399" font-size="8">SQL</text>
+        <text x="315" y="210" fill="#a78bfa" font-size="8">SQL+outbox</text>
+        <text x="447" y="222" fill="#fb923c" font-size="8">AMQP</text>
+        <text x="455" y="155" fill="#34d399" font-size="8">direct SQL</text>
+      </svg>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:0.42em; justify-content:center;">
+      <div class="card" style="font-size:0.70rem;">
+        <strong style="color:#34d399;">API Service (Go)</strong>
+        <p style="margin:0.25em 0 0; color:#9ca3af;">Accepts uploads, validates files, stores originals in S3, records metadata in PostgreSQL. Exposes presigned download URLs.</p>
+      </div>
+      <div class="card" style="font-size:0.70rem;">
+        <strong style="color:#a78bfa;">Job Service (Go)</strong>
+        <p style="margin:0.25em 0 0; color:#9ca3af;">Creates processing jobs and reliably enqueues them to RabbitMQ using the <em>transactional outbox</em> pattern.</p>
+      </div>
+      <div class="card" style="font-size:0.70rem;">
+        <strong style="color:#fb923c;">Workers (Python)</strong>
+        <p style="margin:0.25em 0 0; color:#9ca3af;">Consume one message at a time, process the image with Pillow, upload the result to S3, and update the job status directly in PostgreSQL.</p>
+      </div>
+      <div class="note-box" style="font-size:0.72rem;">
+        Each service is independently deployable and scales separately — the core promise of microservices.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 4b — API SERVICE
+══════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Microservice: API Service</h2>
+  <div class="grid-2">
+    <div style="display:flex; flex-direction:column; gap:0.45em;">
+      <div class="card">
+        <h3>Responsibility</h3>
+        <p>The API Service is the single entry point for file ingestion. It accepts raw image uploads over HTTP, validates them, persists the file to object storage, and records metadata in PostgreSQL. It also serves presigned download URLs for both originals and processed results.</p>
+      </div>
+      <div class="card">
+        <h3>Endpoints</h3>
+        <div class="tech-row"><span class="tech-label" style="font-family:monospace;">POST /api/v1/images</span><span class="tech-value" style="color:#9ca3af;">Upload a new image</span></div>
+        <div class="tech-row"><span class="tech-label" style="font-family:monospace;">GET  /api/v1/images</span><span class="tech-value" style="color:#9ca3af;">List all images</span></div>
+        <div class="tech-row"><span class="tech-label" style="font-family:monospace;">GET  /api/v1/images/:id</span><span class="tech-value" style="color:#9ca3af;">Image metadata + download URL</span></div>
+      </div>
+      <div class="success-box">
+        <strong>Language:</strong> Go 1.22 &nbsp;·&nbsp; <strong>Port:</strong> :8080 &nbsp;·&nbsp; <strong>Module:</strong> <code>image-platform/api-service</code>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:0.45em;">
+      <div class="card">
+        <h3>Upload pipeline (per request)</h3>
+        <ul>
+          <li>Parse <code>multipart/form-data</code> — stream file to memory</li>
+          <li>Read image header with <code>image.DecodeConfig</code> — no pixel decode</li>
+          <li>Reject if file size &gt; <code>MAX_UPLOAD_SIZE_MB</code> or pixels &gt; <code>MAX_MEGAPIXELS</code></li>
+          <li>Generate UUID object key, stream file to S3</li>
+          <li>Insert row into <code>images</code> table in PostgreSQL</li>
+          <li>Return <code>201 Created</code> with image metadata JSON</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>External dependencies</h3>
+        <div class="tech-row"><span class="tech-label">PostgreSQL</span><span class="tech-value" style="color:#9ca3af;"><code>images</code> table — metadata</span></div>
+        <div class="tech-row"><span class="tech-label">S3 / MinIO</span><span class="tech-value" style="color:#9ca3af;">binary file storage</span></div>
+      </div>
+      <div class="warn-box">
+        The API Service is stateless — it holds no in-memory state between requests. Any replica can handle any request, which makes horizontal scaling trivial.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 4c — JOB SERVICE
+══════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Microservice: Job Service</h2>
+  <div class="grid-2">
+    <div style="display:flex; flex-direction:column; gap:0.42em;">
+      <div class="card">
+        <h3>Responsibility</h3>
+        <p>The Job Service manages the lifecycle of processing jobs. It receives a request to process an image, creates a job record in PostgreSQL, and <em>reliably</em> enqueues the job to RabbitMQ using the transactional outbox pattern. It also exposes an endpoint to query job status.</p>
+      </div>
+      <div class="card">
+        <h3>Endpoints</h3>
+        <div class="tech-row"><span class="tech-label" style="font-family:monospace;">POST /api/v1/jobs</span><span class="tech-value" style="color:#9ca3af;">Create a processing job → 202</span></div>
+        <div class="tech-row"><span class="tech-label" style="font-family:monospace;">GET  /api/v1/jobs/:id</span><span class="tech-value" style="color:#9ca3af;">Get job status + result URL</span></div>
+        <div class="tech-row"><span class="tech-label" style="font-family:monospace;">GET  /api/v1/jobs</span><span class="tech-value" style="color:#9ca3af;">List jobs (filterable by status)</span></div>
+      </div>
+      <div class="success-box" style="font-size:0.69rem;">
+        <strong>Language:</strong> Go 1.22 &nbsp;·&nbsp; <strong>Port:</strong> :8081 &nbsp;·&nbsp; <strong>Module:</strong> <code>image-platform/job-service</code>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:0.42em;">
+      <div class="card">
+        <h3>Job creation — transactional outbox</h3>
+        <ul>
+          <li>Begin PostgreSQL transaction</li>
+          <li>Insert row into <code>jobs</code> table (status = PENDING)</li>
+          <li>Insert row into <code>outbox_events</code> table (published = false)</li>
+          <li>Commit — both rows saved atomically</li>
+          <li>Return <code>202 Accepted</code> immediately</li>
+          <li>Background goroutine polls outbox → publishes to RabbitMQ</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>External dependencies</h3>
+        <div class="tech-row"><span class="tech-label">PostgreSQL</span><span class="tech-value" style="color:#9ca3af;"><code>jobs</code> + <code>outbox_events</code></span></div>
+        <div class="tech-row"><span class="tech-label">RabbitMQ</span><span class="tech-value" style="color:#9ca3af;">publish via outbox poller</span></div>
+      </div>
+      <div class="note-box" style="font-size:0.72rem;">
+        The outbox goroutine runs every 500 ms (configurable via <code>OUTBOX_POLL_MS</code>). It batches unpublished events, publishes each to RabbitMQ, and marks them <code>published = true</code>.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 4d — PROCESSING WORKER
+══════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Microservice: Processing Worker</h2>
+  <div class="grid-2">
+    <div style="display:flex; flex-direction:column; gap:0.42em;">
+      <div class="card">
+        <h3>Responsibility</h3>
+        <p>The Processing Worker is a stateless consumer that picks up one job at a time from the RabbitMQ queue, downloads the source image from S3, applies the requested transformation using Pillow, uploads the result back to S3, and updates the job record in PostgreSQL — without any HTTP calls to other services.</p>
+      </div>
+      <div class="card">
+        <h3>Supported operations</h3>
+        <div class="tech-row"><span class="tech-label">resize</span><span class="tech-value" style="color:#9ca3af;">Scale to given width × height</span></div>
+        <div class="tech-row"><span class="tech-label">convert</span><span class="tech-value" style="color:#9ca3af;">Change format (JPEG → PNG etc.)</span></div>
+        <div class="tech-row"><span class="tech-label">watermark</span><span class="tech-value" style="color:#9ca3af;">Overlay text or image</span></div>
+        <div class="tech-row"><span class="tech-label">thumbnail</span><span class="tech-value" style="color:#9ca3af;">Fast square crop + resize</span></div>
+      </div>
+      <div class="success-box" style="font-size:0.69rem;">
+        <strong>Language:</strong> Python 3.12 &nbsp;·&nbsp; <strong>Library:</strong> Pillow &nbsp;·&nbsp; <strong>Queue client:</strong> pika (AMQP)
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:0.42em;">
+      <div class="card">
+        <h3>Processing loop (per message)</h3>
+        <ul>
+          <li>Consume 1 message from RabbitMQ (<code>prefetch_count=1</code>)</li>
+          <li>Parse job payload — get <code>job_id</code>, <code>operation</code>, <code>parameters</code></li>
+          <li>Set job status → PROCESSING in PostgreSQL</li>
+          <li>Download source image from S3</li>
+          <li>Apply Pillow transformation (resize / convert / watermark)</li>
+          <li>Upload result to S3 with a new object key</li>
+          <li>Set job status → COMPLETED + store result key in PostgreSQL</li>
+          <li>Acknowledge message to RabbitMQ</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>External dependencies</h3>
+        <div class="tech-row"><span class="tech-label">RabbitMQ</span><span class="tech-value" style="color:#9ca3af;">consume jobs (AMQP)</span></div>
+        <div class="tech-row"><span class="tech-label">S3 / MinIO</span><span class="tech-value" style="color:#9ca3af;">download source, upload result</span></div>
+        <div class="tech-row"><span class="tech-label">PostgreSQL</span><span class="tech-value" style="color:#9ca3af;">update job status directly</span></div>
+      </div>
+      <div class="warn-box" style="font-size:0.72rem;">
+        If processing fails, the worker sets status → FAILED with an error message and <strong>nacks</strong> the RabbitMQ message (optionally requeuing it). The <code>attempt_count</code> field tracks retries.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 5 — TECH STACK
+══════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Technology Stack</h2>
+  <div class="grid-2" style="margin-bottom:0.4em;">
+    <div class="card">
+      <h3>Services</h3>
+      <div class="tech-row"><span class="tech-label">API Service</span><span class="tech-value"><span class="tag tag-go">Go 1.22</span> &nbsp; net/http, minio-go</span></div>
+      <div class="tech-row"><span class="tech-label">Job Service</span><span class="tech-value"><span class="tag tag-go">Go 1.22</span> &nbsp; amqp091-go</span></div>
+      <div class="tech-row"><span class="tech-label">Worker</span><span class="tech-value"><span class="tag tag-py">Python 3.12</span> &nbsp; Pillow, pika</span></div>
+      <div class="tech-row"><span class="tech-label">Frontend</span><span class="tech-value"><span class="tag tag-js">HTML/CSS/JS</span> &nbsp; SPA, fetch API</span></div>
+    </div>
+    <div class="card">
+      <h3>Infrastructure</h3>
+      <div class="tech-row"><span class="tech-label">Database</span><span class="tech-value"><span class="tag tag-pg">PostgreSQL 16</span> &nbsp; JSONB, UUID</span></div>
+      <div class="tech-row"><span class="tech-label">Object Storage</span><span class="tech-value"><span class="tag tag-s3">S3 / MinIO</span> &nbsp; presigned URLs</span></div>
+      <div class="tech-row"><span class="tech-label">Message Queue</span><span class="tech-value"><span class="tag tag-mq">RabbitMQ 3.13</span> &nbsp; AMQP 0-9-1</span></div>
+      <div class="tech-row"><span class="tech-label">Orchestration</span><span class="tech-value"><span class="tag tag-k8s">Kubernetes</span> &nbsp; HPA, PVC, Secrets</span></div>
+      <div class="tech-row"><span class="tech-label">Local dev</span><span class="tech-value">Docker Compose</span></div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="success-box">
+      <strong>Why Go for services?</strong> Go compiles to a single binary, has excellent concurrency primitives (goroutines) for the outbox poller, and produces small Docker images. Both services start in under 100ms.
+    </div>
+    <div class="note-box">
+      <strong>Why Python for workers?</strong> The Python imaging ecosystem (Pillow) is mature and well-documented. Workers are stateless and CPU-bound — easy to scale horizontally regardless of language runtime.
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 5b — WHAT IS MINIO?
+══════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Technology: MinIO — Object Storage</h2>
+  <div class="grid-2">
+    <div style="display:flex; flex-direction:column; gap:0.42em;">
+      <div class="card">
+        <h3>What is MinIO?</h3>
+        <p>MinIO is an open-source, S3-compatible object storage server. It stores files as <em>objects</em> (blobs) identified by a <em>bucket</em> and an <em>object key</em> (a string path). Unlike a relational database, it has no schema — it stores any file type at any size.</p>
+        <p style="margin-top:0.5em;">In this project, MinIO runs as a Docker container in local development. In production on Kubernetes it is replaced by any S3-compatible cloud service (AWS S3, Google Cloud Storage, etc.) — <strong>the Go code does not change</strong> because the API is identical.</p>
+      </div>
+      <div class="card">
+        <h3>Why not store files in PostgreSQL?</h3>
+        <ul>
+          <li>Binary files in a database bloat WAL logs and make backups slow</li>
+          <li>S3 scales independently from the database — no IOPS contention</li>
+          <li>Object storage is designed for large, immutable blobs — it's much cheaper per GB</li>
+          <li>Presigned URLs let clients download directly from storage, bypassing the API server entirely</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:0.42em;">
+      <div class="card">
+        <h3>How it is used here</h3>
+        <div class="tech-row"><span class="tech-label">API Service</span><span class="tech-value" style="color:#9ca3af;">Uploads originals on POST /images</span></div>
+        <div class="tech-row"><span class="tech-label">API Service</span><span class="tech-value" style="color:#9ca3af;">Generates presigned GET URL (TTL 60 min)</span></div>
+        <div class="tech-row"><span class="tech-label">Worker</span><span class="tech-value" style="color:#9ca3af;">Downloads source, uploads result</span></div>
+        <div class="tech-row"><span class="tech-label">Client</span><span class="tech-value" style="color:#9ca3af;">Downloads result directly via presigned URL</span></div>
+      </div>
+      <div class="highlight-box">
+        <p><strong>Presigned URL:</strong> a time-limited, cryptographically signed URL that grants read access to a single object without any credentials. The client downloads the file directly from S3 — the API server is not in the data path.</p>
+      </div>
+      <div class="note-box" style="font-size:0.72rem;">
+        The Go client library is <code>minio-go</code>. Because MinIO speaks the same S3 API, switching to AWS S3 in production is a one-line config change — no code rewrite.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 5c — WHAT IS RABBITMQ?
+══════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Technology: RabbitMQ — Message Queue</h2>
+  <div class="grid-2">
+    <div style="display:flex; flex-direction:column; gap:0.42em;">
+      <div class="card">
+        <h3>What is RabbitMQ?</h3>
+        <p>RabbitMQ is a message broker — a server that accepts messages from producers and delivers them to consumers via named queues. It implements the <strong>AMQP 0-9-1</strong> protocol.</p>
+        <p style="margin-top:0.5em;">A producer (Job Service) publishes a message to an <em>exchange</em>. The exchange routes it to a <em>queue</em>. A consumer (Worker) pulls from that queue, processes the message, and sends an <em>acknowledgement</em> (ack) when done. Only then does RabbitMQ delete the message.</p>
+      </div>
+      <div class="card">
+        <h3>Why RabbitMQ instead of direct HTTP?</h3>
+        <ul>
+          <li><strong>Decoupling:</strong> Job Service does not need to know how many workers exist or where they are</li>
+          <li><strong>Reliability:</strong> messages persist in the queue even if all workers are down</li>
+          <li><strong>Load leveling:</strong> workers consume at their own pace — no API timeout, no back-pressure on the HTTP layer</li>
+          <li><strong>Scaling:</strong> add workers without changing any configuration in Job Service</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:0.42em;">
+      <div class="card">
+        <h3>prefetch_count = 1</h3>
+        <p>This setting tells RabbitMQ to send at most <strong>1 unacknowledged message</strong> to each worker at a time. A new message is only dispatched after the previous one is acked.</p>
+        <ul style="margin-top:0.4em;">
+          <li>Without it: RabbitMQ would push all queued messages to the first available worker, starving others</li>
+          <li>With it: a slow worker (large image) does not block faster ones — work distributes fairly</li>
+        </ul>
+      </div>
+      <div class="warn-box" style="font-size:0.72rem;">
+        <strong>What happens if a worker crashes mid-job?</strong> Because the message was not acked, RabbitMQ automatically requeues it and delivers it to another worker — no job is lost.
+      </div>
+      <div class="note-box" style="font-size:0.72rem;">
+        RabbitMQ also has a <strong>Management UI</strong> (port 15672) that shows live queue depth, message rates, and consumer counts — useful for monitoring during load tests.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 5d — WHAT IS TRANSACTIONAL OUTBOX?
+══════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Pattern: Transactional Outbox</h2>
+  <div class="grid-2" style="margin-bottom:0.35em;">
+    <div style="display:flex; flex-direction:column; gap:0.42em;">
+      <div class="card">
+        <h3>The problem it solves</h3>
+        <p>A naive implementation of "create job + publish to queue" would do two separate operations:</p>
+        <ol style="padding-left:1.2em; font-size:0.8rem; line-height:1.8;">
+          <li>INSERT job into PostgreSQL</li>
+          <li>Publish message to RabbitMQ</li>
+        </ol>
+        <p style="margin-top:0.4em;">If the service crashes <strong>between steps 1 and 2</strong>, the job exists in the database but RabbitMQ never received the message — the job is permanently stuck with no worker ever picking it up.</p>
+      </div>
+      <div class="card">
+        <h3>The solution</h3>
+        <p>Write the message to a database table (<code>outbox_events</code>) <strong>in the same transaction</strong> as the job. A separate background goroutine (the <em>poller</em>) reads unpublished rows and forwards them to RabbitMQ.</p>
+        <ul style="margin-top:0.4em;">
+          <li>If the service crashes before publishing — the row is still in the DB, poller will retry</li>
+          <li>If the service crashes after publishing but before marking as published — the message is re-sent (at-least-once), worker must be idempotent</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div style="display:flex; justify-content:center;">
+        <svg width="370" height="240" viewBox="0 0 370 240" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="oa" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#a78bfa"/></marker>
+            <marker id="ob" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#34d399"/></marker>
+            <marker id="oc" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#fb923c"/></marker>
+          </defs>
+
+          <!-- Transaction box -->
+          <rect x="5" y="5" width="180" height="130" rx="10" fill="rgba(167,139,250,0.07)" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <text x="95" y="22" text-anchor="middle" fill="#a78bfa" font-size="9">Single DB transaction</text>
+
+          <!-- jobs row -->
+          <rect x="20" y="32" width="150" height="38" rx="7" fill="#1c1917" stroke="#a78bfa" stroke-width="1.2"/>
+          <text x="95" y="50" text-anchor="middle" fill="#c4b5fd" font-size="10" font-weight="600">INSERT jobs</text>
+          <text x="95" y="63" text-anchor="middle" fill="#9ca3af" font-size="8">status = PENDING</text>
+
+          <!-- outbox row -->
+          <rect x="20" y="82" width="150" height="38" rx="7" fill="#431407" stroke="#fb923c" stroke-width="1.2"/>
+          <text x="95" y="100" text-anchor="middle" fill="#fdba74" font-size="10" font-weight="600">INSERT outbox_events</text>
+          <text x="95" y="113" text-anchor="middle" fill="#9ca3af" font-size="8">published = false</text>
+
+          <!-- COMMIT -->
+          <rect x="60" y="146" width="80" height="26" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1.2"/>
+          <text x="100" y="163" text-anchor="middle" fill="#6ee7b7" font-size="10" font-weight="600">COMMIT</text>
+
+          <!-- Poller -->
+          <rect x="220" y="82" width="130" height="38" rx="7" fill="#1e3a5f" stroke="#4f9cf9" stroke-width="1.2"/>
+          <text x="285" y="100" text-anchor="middle" fill="#93c5fd" font-size="10" font-weight="600">Outbox Poller</text>
+          <text x="285" y="113" text-anchor="middle" fill="#60a5fa" font-size="8">goroutine every 500ms</text>
+
+          <!-- RabbitMQ -->
+          <rect x="220" y="162" width="130" height="38" rx="7" fill="#431407" stroke="#fb923c" stroke-width="1.2"/>
+          <text x="285" y="180" text-anchor="middle" fill="#fdba74" font-size="10" font-weight="600">RabbitMQ</text>
+          <text x="285" y="193" text-anchor="middle" fill="#fb923c" font-size="8">publish message</text>
+
+          <!-- Mark published -->
+          <rect x="220" y="210" width="130" height="24" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+          <text x="285" y="226" text-anchor="middle" fill="#6ee7b7" font-size="9">published = true</text>
+
+          <!-- Arrows -->
+          <line x1="170" y1="101" x2="218" y2="101" stroke="#4f9cf9" stroke-width="1.5" marker-end="url(#oa)"/>
+          <line x1="285" y1="120" x2="285" y2="160" stroke="#fb923c" stroke-width="1.5" marker-end="url(#oc)"/>
+          <line x1="285" y1="200" x2="285" y2="208" stroke="#34d399" stroke-width="1.5" marker-end="url(#ob)"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="success-box" style="font-size:0.69rem;">
+    <strong>Key insight:</strong> by using the database as a reliable intermediate store, we reduce a distributed two-phase commit problem to a simple local transaction. The poller handles the async delivery with automatic retry — no external coordinator needed.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 5e — WHAT IS SPA?
+══════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Technology: SPA — Single Page Application</h2>
+  <div class="grid-2">
+    <div style="display:flex; flex-direction:column; gap:0.42em;">
+      <div class="card">
+        <h3>What is an SPA?</h3>
+        <p>A Single Page Application is a web frontend that loads <strong>once</strong> (a single HTML file) and then dynamically updates the content using JavaScript — without full page reloads. Navigation between "pages" is handled client-side by manipulating the DOM.</p>
+        <p style="margin-top:0.5em;">In this project, the frontend is a plain HTML/CSS/JavaScript SPA — no framework required. It communicates with the backend exclusively through REST API calls using the browser's native <code>fetch()</code> API.</p>
+      </div>
+      <div class="card">
+        <h3>Why SPA over server-rendered HTML?</h3>
+        <ul>
+          <li>The backend is already an API — no templating layer needed</li>
+          <li>A single static HTML file can be served from any CDN or Nginx container</li>
+          <li>Faster perceived performance — only data (JSON) is fetched after first load, not full HTML pages</li>
+          <li>Clean separation: backend owns data, frontend owns presentation</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:0.42em;">
+      <div class="card">
+        <h3>Frontend responsibilities</h3>
+        <ul>
+          <li>Upload form — drag and drop image, send <code>multipart/form-data</code></li>
+          <li>Display upload progress and returned image metadata</li>
+          <li>Job creation form — select operation and parameters</li>
+          <li>Poll <code>GET /api/v1/jobs/:id</code> every few seconds to show live status</li>
+          <li>Display the processed result image when the job completes</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Single base URL via Ingress</h3>
+        <p>Because Kubernetes Ingress routes both <code>/api/v1/images</code> and <code>/api/v1/jobs</code> from a single hostname, the frontend only needs <strong>one configured base URL</strong> — it never knows or cares that two separate services exist behind it.</p>
+      </div>
+      <div class="note-box" style="font-size:0.72rem;">
+        Chapter 4 of the thesis. Currently the backend is fully functional — the SPA is the remaining user-facing layer.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 5f — WHAT IS HPA?
+══════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Technology: HPA — Horizontal Pod Autoscaler</h2>
+  <div class="grid-2">
+    <div style="display:flex; flex-direction:column; gap:0.42em;">
+      <div class="card">
+        <h3>What is HPA?</h3>
+        <p>Horizontal Pod Autoscaler is a Kubernetes controller that automatically adjusts the number of running Pods in a Deployment based on observed metrics — typically CPU or memory utilisation.</p>
+        <p style="margin-top:0.5em;">When CPU usage exceeds the configured threshold, Kubernetes adds more replicas. When usage drops, it removes them. The process is fully automatic — no human intervention needed.</p>
+      </div>
+      <div class="card">
+        <h3>Horizontal vs Vertical scaling</h3>
+        <ul>
+          <li><strong>Horizontal (HPA):</strong> add more identical pods — load is distributed. Preferred for stateless services.</li>
+          <li><strong>Vertical:</strong> give each pod more CPU/RAM. Has limits, requires restart, harder to automate.</li>
+        </ul>
+        <p style="margin-top:0.4em; color:#9ca3af; font-size:0.76rem;">Workers are stateless — each one processes one job independently. Adding 10 workers = 10× throughput. This is the ideal case for horizontal scaling.</p>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:0.42em;">
+      <div class="card">
+        <h3>HPA configuration in this project</h3>
+        <div class="tech-row"><span class="tech-label">api-service</span><span class="tech-value" style="color:#9ca3af;">min 1 · max 5 · CPU target 70%</span></div>
+        <div class="tech-row"><span class="tech-label">job-service</span><span class="tech-value" style="color:#9ca3af;">min 1 · max 3 · CPU target 70%</span></div>
+        <div class="tech-row"><span class="tech-label">workers</span><span class="tech-value" style="color:#9ca3af;">min 1 · max 10 · CPU target 80%</span></div>
+      </div>
+      <div class="highlight-box">
+        <p><strong>Why 1–10 workers?</strong> Image processing (decode → transform → encode) is CPU-intensive. Under a burst of upload requests, worker CPU saturates quickly. A wide autoscaling range lets the platform absorb traffic spikes without pre-provisioning expensive hardware at all times.</p>
+      </div>
+      <div class="note-box" style="font-size:0.72rem;">
+        Chapter 5 of the thesis includes load tests that demonstrate HPA kicking in — measuring throughput with 1 worker vs 10 workers under identical request rates.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 6 — DATA FLOW
+══════════════════════════════════════════════════════════ -->
+<section>
+  <h2>End-to-End Data Flow</h2>
+  <div style="display:flex; justify-content:center; margin-bottom:0.6em;">
+    <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="fa" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+          <polygon points="0 0,7 2.5,0 5" fill="#4f9cf9"/>
+        </marker>
+      </defs>
+      <!-- Step 1 -->
+      <rect x="10"  y="50" width="120" height="58" rx="8" fill="#1e3a5f" stroke="#4f9cf9" stroke-width="1.5"/>
+      <text x="70"  y="74" text-anchor="middle" fill="#93c5fd" font-size="11" font-weight="600">① Upload</text>
+      <text x="70"  y="88" text-anchor="middle" fill="#60a5fa" font-size="8.5">POST /api/v1/images</text>
+      <text x="70"  y="101" text-anchor="middle" fill="#60a5fa" font-size="8.5">multipart/form-data</text>
+      <text x="70"  y="126" text-anchor="middle" fill="#64748b" font-size="8">synchronous</text>
+
+      <line x1="130" y1="79" x2="152" y2="79" stroke="#4f9cf9" stroke-width="1.5" marker-end="url(#fa)"/>
+
+      <!-- Step 2 -->
+      <rect x="153" y="50" width="120" height="58" rx="8" fill="#064e3b" stroke="#34d399" stroke-width="1.5"/>
+      <text x="213" y="74" text-anchor="middle" fill="#6ee7b7" font-size="11" font-weight="600">② Validate &amp; Store</text>
+      <text x="213" y="88" text-anchor="middle" fill="#34d399" font-size="8.5">pixel bomb check</text>
+      <text x="213" y="101" text-anchor="middle" fill="#34d399" font-size="8.5">save → S3 + PG</text>
+      <text x="213" y="126" text-anchor="middle" fill="#64748b" font-size="8">synchronous</text>
+
+      <line x1="273" y1="79" x2="295" y2="79" stroke="#4f9cf9" stroke-width="1.5" marker-end="url(#fa)"/>
+
+      <!-- Step 3 -->
+      <rect x="296" y="50" width="120" height="58" rx="8" fill="#1c1917" stroke="#a78bfa" stroke-width="1.5"/>
+      <text x="356" y="74" text-anchor="middle" fill="#c4b5fd" font-size="11" font-weight="600">③ Create Job</text>
+      <text x="356" y="88" text-anchor="middle" fill="#a78bfa" font-size="8.5">POST /api/v1/jobs</text>
+      <text x="356" y="101" text-anchor="middle" fill="#a78bfa" font-size="8.5">→ 202 Accepted</text>
+      <text x="356" y="126" text-anchor="middle" fill="#fbbf24" font-size="8">returns job ID</text>
+
+      <line x1="416" y1="79" x2="438" y2="79" stroke="#4f9cf9" stroke-width="1.5" marker-end="url(#fa)"/>
+
+      <!-- Step 4 -->
+      <rect x="439" y="50" width="120" height="58" rx="8" fill="#431407" stroke="#fb923c" stroke-width="1.5"/>
+      <text x="499" y="74" text-anchor="middle" fill="#fdba74" font-size="11" font-weight="600">④ Enqueue</text>
+      <text x="499" y="88" text-anchor="middle" fill="#fb923c" font-size="8.5">outbox poller goroutine</text>
+      <text x="499" y="101" text-anchor="middle" fill="#fb923c" font-size="8.5">→ RabbitMQ</text>
+      <text x="499" y="126" text-anchor="middle" fill="#fbbf24" font-size="8">async, background</text>
+
+      <line x1="559" y1="79" x2="581" y2="79" stroke="#4f9cf9" stroke-width="1.5" marker-end="url(#fa)"/>
+
+      <!-- Step 5 -->
+      <rect x="582" y="50" width="120" height="58" rx="8" fill="#1a1a2e" stroke="#a78bfa" stroke-width="1.5"/>
+      <text x="642" y="74" text-anchor="middle" fill="#c4b5fd" font-size="11" font-weight="600">⑤ Process</text>
+      <text x="642" y="88" text-anchor="middle" fill="#a78bfa" font-size="8.5">Pillow transform</text>
+      <text x="642" y="101" text-anchor="middle" fill="#a78bfa" font-size="8.5">result → S3 + PG</text>
+      <text x="642" y="126" text-anchor="middle" fill="#fbbf24" font-size="8">async worker</text>
+
+      <!-- Polling arrow -->
+      <path d="M70 108 Q70 148 356 148 Q500 148 582 108" fill="none" stroke="#fbbf24" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#fa)"/>
+      <text x="330" y="158" text-anchor="middle" fill="#fbbf24" font-size="8.5">client polls GET /api/v1/jobs/:id for status</text>
+    </svg>
+  </div>
+
+  <div class="grid-3" style="gap:0.42em;">
+    <div class="card" style="font-size:0.69rem;">
+      <strong style="color:#34d399;">Steps 1–2: Synchronous path</strong>
+      <p style="margin:0.25em 0 0; color:#9ca3af;">The API Service validates the file header (without fully decoding it), rejects pixel bombs, and persists the original to S3 and metadata to PostgreSQL — all within a single HTTP request cycle.</p>
+    </div>
+    <div class="card" style="font-size:0.69rem;">
+      <strong style="color:#a78bfa;">Step 3: Hand-off</strong>
+      <p style="margin:0.25em 0 0; color:#9ca3af;">The Job Service creates a job record and an outbox event in a single database transaction. It immediately returns <code>202 Accepted</code> with the job ID — the client is never blocked waiting for processing to complete.</p>
+    </div>
+    <div class="card" style="font-size:0.69rem;">
+      <strong style="color:#fb923c;">Steps 4–5: Async path</strong>
+      <p style="margin:0.25em 0 0; color:#9ca3af;">A background goroutine polls unpublished outbox events and pushes them to RabbitMQ. Workers consume one message at a time, process the image, and write the result directly to S3 and PostgreSQL.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 7 — DATA MODEL
+══════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Data Model</h2>
+  <div style="display:flex; justify-content:center; gap:1.5em; margin-bottom:0.4em; flex-wrap:wrap;">
+    <div class="card" style="min-width:190px;">
+      <div style="color:#34d399; font-weight:700; margin-bottom:0.5em; font-size:0.82rem;">images</div>
+      <div style="font-size:0.7rem; font-family:monospace; line-height:1.85;">
+        <div><span style="color:#fbbf24;">id</span>                <span style="color:#64748b;">UUID PK</span></div>
+        <div><span style="color:#d1d5db;">original_filename</span> <span style="color:#64748b;">TEXT</span></div>
+        <div><span style="color:#d1d5db;">object_key</span>        <span style="color:#64748b;">TEXT UNIQUE</span></div>
+        <div><span style="color:#d1d5db;">content_type</span>      <span style="color:#64748b;">TEXT</span></div>
+        <div><span style="color:#d1d5db;">file_size</span>         <span style="color:#64748b;">BIGINT</span></div>
+        <div><span style="color:#d1d5db;">width, height</span>     <span style="color:#64748b;">INT</span></div>
+        <div><span style="color:#475569;">created_at</span>        <span style="color:#64748b;">TIMESTAMPTZ</span></div>
+      </div>
+    </div>
+
+    <div style="display:flex; align-items:center; color:#4f9cf9; font-size:1.3rem;">→</div>
+
+    <div class="card" style="min-width:220px;">
+      <div style="color:#a78bfa; font-weight:700; margin-bottom:0.5em; font-size:0.82rem;">jobs</div>
+      <div style="font-size:0.7rem; font-family:monospace; line-height:1.85;">
+        <div><span style="color:#fbbf24;">id</span>              <span style="color:#64748b;">UUID PK</span></div>
+        <div><span style="color:#699abb;">image_id</span>       <span style="color:#64748b;">UUID FK → images</span></div>
+        <div><span style="color:#d1d5db;">operation</span>      <span style="color:#64748b;">TEXT</span></div>
+        <div><span style="color:#d1d5db;">parameters</span>     <span style="color:#64748b;">JSONB</span></div>
+        <div><span style="color:#4f9cf9;">status</span>         <span style="color:#64748b;">ENUM</span></div>
+        <div><span style="color:#d1d5db;">result_object_key</span> <span style="color:#64748b;">TEXT</span></div>
+        <div><span style="color:#475569;">created / started / finished_at</span></div>
+      </div>
+    </div>
+
+    <div style="display:flex; align-items:center; color:#fb923c; font-size:1.3rem;">→</div>
+
+    <div class="card" style="min-width:195px;">
+      <div style="color:#fb923c; font-weight:700; margin-bottom:0.5em; font-size:0.82rem;">outbox_events</div>
+      <div style="font-size:0.7rem; font-family:monospace; line-height:1.85;">
+        <div><span style="color:#fbbf24;">id</span>         <span style="color:#64748b;">UUID PK</span></div>
+        <div><span style="color:#699abb;">job_id</span>    <span style="color:#64748b;">UUID FK → jobs</span></div>
+        <div><span style="color:#d1d5db;">payload</span>   <span style="color:#64748b;">JSONB</span></div>
+        <div><span style="color:#4f9cf9;">published</span> <span style="color:#64748b;">BOOLEAN DEFAULT false</span></div>
+        <div><span style="color:#475569;">created_at</span> <span style="color:#64748b;">TIMESTAMPTZ</span></div>
+      </div>
+      <div style="margin-top:0.5em; font-size:0.66rem; color:#f97316;">Partial index WHERE published=false</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="gap:0.42em;">
+    <div class="success-box" style="font-size:0.69rem;">
+      <strong>Job status lifecycle:</strong> &nbsp;
+      <span style="color:#fbbf24;">PENDING</span> →
+      <span style="color:#4f9cf9;">PROCESSING</span> →
+      <span style="color:#34d399;">COMPLETED</span> / <span style="color:#f87171;">FAILED</span>
+      <br/><br/>
+      The <code>attempt_count</code> field and <code>error_message</code> column allow workers to record retries and failure reasons without extra tables.
+    </div>
+    <div class="note-box" style="font-size:0.69rem;">
+      <strong>JSONB parameters:</strong> Using JSONB for job parameters means the schema does not need to change when new operation types are added — a resize job carries <code>{"width":800,"height":600}</code>, a watermark job carries different keys. No migrations needed for new operations.
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 8 — KEY ARCHITECTURAL DECISIONS
+══════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Key Architectural Decisions</h2>
+  <div class="grid-3" style="margin-bottom:0.35em;">
+    <div class="card">
+      <h3>Transactional Outbox</h3>
+      <p>The job row and the outbox_event row are inserted in a single database transaction. A separate goroutine polls unpublished events and forwards them to RabbitMQ.</p>
+      <p style="color:#fbbf24; font-size:0.7rem; margin-top:0.4em;">Guarantees at-least-once delivery even if the service crashes after writing to the DB but before publishing to the queue.</p>
+    </div>
+    <div class="card">
+      <h3>Worker → DB Direct</h3>
+      <p>Workers update job status directly in PostgreSQL, without any HTTP call back to Job Service. This removes a synchronous dependency between services.</p>
+      <p style="color:#34d399; font-size:0.7rem; margin-top:0.4em;">Job Service does not become a bottleneck or single point of failure for the processing pipeline.</p>
+    </div>
+    <div class="card">
+      <h3>prefetch_count = 1</h3>
+      <p>Each worker fetches exactly one message from the queue at a time. RabbitMQ only dispatches the next message after acknowledgement.</p>
+      <p style="color:#a78bfa; font-size:0.7rem; margin-top:0.4em;">Ensures fair load distribution across replicas — a slow worker does not starve faster ones.</p>
+    </div>
+    <div class="card">
+      <h3>Pixel Bomb Protection</h3>
+      <p><code>image.DecodeConfig</code> reads only the file header, never decoding pixels into memory. The megapixel check rejects the file before it is stored anywhere.</p>
+      <p style="color:#f87171; font-size:0.7rem; margin-top:0.4em;">Prevents memory-exhaustion DoS attacks via crafted images (e.g. a 1 × 100 000 000 px PNG).</p>
+    </div>
+    <div class="card">
+      <h3>Presigned URL TTL</h3>
+      <p>Processed results are served directly from S3 via a time-limited presigned URL (default 60 min). The API never streams binary file data to the client.</p>
+      <p style="color:#4f9cf9; font-size:0.7rem; margin-top:0.4em;">Eliminates a bandwidth bottleneck at the API layer and offloads large file transfers entirely to the object store.</p>
+    </div>
+    <div class="card">
+      <h3>Single Ingress</h3>
+      <p>A Kubernetes Ingress routes <code>/images</code> to API Service and <code>/jobs</code> to Job Service. The client uses one base URL — services scale independently behind it.</p>
+      <p style="color:#86efac; font-size:0.7rem; margin-top:0.4em;">Decouples client configuration from the internal service topology entirely.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 9 — KUBERNETES
+══════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Kubernetes Deployment &amp; Scaling</h2>
+  <div class="grid-2">
+    <div>
+      <svg width="310" height="248" viewBox="0 0 310 248" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="4" width="302" height="240" rx="12" fill="none" stroke="#326ce5" stroke-width="1.5" stroke-dasharray="5,4"/>
+        <text x="155" y="20" text-anchor="middle" fill="#5a8fd8" font-size="9">Kubernetes Cluster · namespace: platform</text>
+
+        <!-- Ingress -->
+        <rect x="100" y="28" width="110" height="28" rx="6" fill="#1e1b4b" stroke="#818cf8" stroke-width="1.2"/>
+        <text x="155" y="47" text-anchor="middle" fill="#c7d2fe" font-size="10" font-weight="600">Ingress</text>
+
+        <!-- API -->
+        <rect x="20" y="84" width="110" height="46" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1.2"/>
+        <text x="75" y="105" text-anchor="middle" fill="#6ee7b7" font-size="10" font-weight="600">api-service</text>
+        <text x="75" y="120" text-anchor="middle" fill="#34d399" font-size="8">Deployment + HPA 1–5</text>
+
+        <!-- Job -->
+        <rect x="180" y="84" width="110" height="46" rx="6" fill="#1c1917" stroke="#a78bfa" stroke-width="1.2"/>
+        <text x="235" y="105" text-anchor="middle" fill="#c4b5fd" font-size="10" font-weight="600">job-service</text>
+        <text x="235" y="120" text-anchor="middle" fill="#a78bfa" font-size="8">Deployment + HPA 1–3</text>
+
+        <!-- Workers -->
+        <rect x="100" y="160" width="110" height="46" rx="6" fill="#1a1a2e" stroke="#a78bfa" stroke-width="1.2"/>
+        <text x="155" y="181" text-anchor="middle" fill="#c4b5fd" font-size="10" font-weight="600">workers</text>
+        <text x="155" y="196" text-anchor="middle" fill="#a78bfa" font-size="8">Deployment + HPA 1–10</text>
+
+        <!-- Arrows -->
+        <line x1="155" y1="56" x2="100"  y2="84"  stroke="#818cf8" stroke-width="1"/>
+        <line x1="155" y1="56" x2="210"  y2="84"  stroke="#818cf8" stroke-width="1"/>
+        <line x1="235" y1="130" x2="200" y2="160" stroke="#a78bfa" stroke-width="1" stroke-dasharray="3,2"/>
+      </svg>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:0.42em;">
+      <div class="card">
+        <h3>Horizontal Pod Autoscaler</h3>
+        <div class="tech-row"><span class="tech-label">api-service</span><span class="tech-value">1 – 5 replicas · CPU 70%</span></div>
+        <div class="tech-row"><span class="tech-label">job-service</span><span class="tech-value">1 – 3 replicas · CPU 70%</span></div>
+        <div class="tech-row"><span class="tech-label">workers</span><span class="tech-value">1 – 10 replicas · CPU 80%</span></div>
+      </div>
+      <div class="card">
+        <h3>Storage &amp; Config</h3>
+        <ul>
+          <li>PostgreSQL &amp; MinIO — PersistentVolumeClaims</li>
+          <li>DB credentials — Kubernetes Secrets</li>
+          <li>Service config — ConfigMaps</li>
+          <li>Ingress routing — path-based rules</li>
+        </ul>
+      </div>
+      <div class="success-box" style="font-size:0.72rem;">
+        Workers have the widest scaling range (1–10) because image processing is the most CPU-intensive part of the pipeline. Under heavy load, Kubernetes automatically adds pods; when the queue drains, it scales back down.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 10 — PROJECT STATUS
+══════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Project Status &amp; Roadmap</h2>
+  <div class="grid-2">
+    <div>
+      <div style="margin-bottom:0.6em;">
+        <div class="status-row">
+          <div><strong style="color:#34d399;">Chapter 1</strong> <span style="color:#64748b; font-size:0.69rem; margin-left:0.4em;">API Service · PostgreSQL · MinIO</span></div>
+          <span class="pill pill-done">✓ DONE</span>
+        </div>
+        <div class="status-row">
+          <div><strong style="color:#34d399;">Chapter 2</strong> <span style="color:#64748b; font-size:0.69rem; margin-left:0.4em;">Job Service · RabbitMQ · Outbox</span></div>
+          <span class="pill pill-done">✓ DONE</span>
+        </div>
+        <div class="status-row">
+          <div><strong style="color:#d1d5db;">Chapter 3</strong> <span style="color:#64748b; font-size:0.69rem; margin-left:0.4em;">Python Worker · Pillow processing</span></div>
+          <span class="pill pill-todo">TODO</span>
+        </div>
+        <div class="status-row">
+          <div><strong style="color:#d1d5db;">Chapter 4</strong> <span style="color:#64748b; font-size:0.69rem; margin-left:0.4em;">Frontend SPA · HTML/CSS/JS</span></div>
+          <span class="pill pill-todo">TODO</span>
+        </div>
+        <div class="status-row">
+          <div><strong style="color:#d1d5db;">Chapter 5</strong> <span style="color:#64748b; font-size:0.69rem; margin-left:0.4em;">Kubernetes · HPA · load testing</span></div>
+          <span class="pill pill-todo">TODO</span>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div style="margin-top:0.8em;">
+        <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#64748b; margin-bottom:0.3em;">
+          <span>Overall progress</span><span>2 / 5 chapters complete</span>
+        </div>
+        <div style="background:#1e293b; border-radius:999px; height:10px; overflow:hidden;">
+          <div style="width:40%; background:linear-gradient(90deg,#34d399,#4f9cf9); height:100%; border-radius:999px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:0.42em;">
+      <!-- Bar chart: components per chapter -->
+      <div class="card" style="padding:0.8em 1em;">
+        <div style="font-size:0.7rem; color:#64748b; margin-bottom:0.5em;">New components introduced per chapter</div>
+        <svg width="240" height="90" viewBox="0 0 240 90">
+          <!-- bars -->
+          <rect x="5"   y="10" width="38" height="52" rx="4" fill="#34d399" opacity="0.85"/>
+          <rect x="53"  y="10" width="38" height="52" rx="4" fill="#34d399" opacity="0.85"/>
+          <rect x="101" y="24" width="38" height="38" rx="4" fill="#374151" opacity="0.85"/>
+          <rect x="149" y="36" width="38" height="26" rx="4" fill="#374151" opacity="0.85"/>
+          <rect x="197" y="18" width="38" height="44" rx="4" fill="#374151" opacity="0.85"/>
+          <!-- labels top -->
+          <text x="24"  y="8"  text-anchor="middle" fill="#34d399"  font-size="9">API·PG·S3</text>
+          <text x="72"  y="8"  text-anchor="middle" fill="#34d399"  font-size="9">Job·MQ·Outbox</text>
+          <text x="120" y="22" text-anchor="middle" fill="#9ca3af" font-size="9">Worker·Pillow</text>
+          <text x="168" y="34" text-anchor="middle" fill="#9ca3af" font-size="9">SPA</text>
+          <text x="216" y="16" text-anchor="middle" fill="#9ca3af" font-size="9">K8s+HPA</text>
+          <!-- x labels -->
+          <text x="24"  y="80" text-anchor="middle" fill="#6b7280" font-size="8">Ch.1</text>
+          <text x="72"  y="80" text-anchor="middle" fill="#6b7280" font-size="8">Ch.2</text>
+          <text x="120" y="80" text-anchor="middle" fill="#6b7280" font-size="8">Ch.3</text>
+          <text x="168" y="80" text-anchor="middle" fill="#6b7280" font-size="8">Ch.4</text>
+          <text x="216" y="80" text-anchor="middle" fill="#6b7280" font-size="8">Ch.5</text>
+        </svg>
+      </div>
+
+      <div class="note-box" style="font-size:0.72rem;">
+        <strong>What's already working:</strong> full upload pipeline — REST API, file validation, S3 storage, PostgreSQL metadata, job creation, transactional outbox, and RabbitMQ publishing. End-to-end smoke tests pass in Docker Compose.
+      </div>
+      <div class="warn-box" style="font-size:0.72rem;">
+        <strong>Next step — Chapter 3:</strong> implement the Python worker that consumes jobs from RabbitMQ, applies Pillow transformations (resize, convert, watermark), and writes results back to S3 and PostgreSQL.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 11 — SUMMARY
+══════════════════════════════════════════════════════════ -->
+<section>
+  <h2>Summary</h2>
+  <div class="grid-2" style="margin-bottom:0.4em;">
+    <div>
+      <div class="card" style="margin-bottom:0.35em;">
+        <h3>What was built</h3>
+        <ul>
+          <li>Two production-grade Go microservices with full REST APIs</li>
+          <li>Reliable async messaging via the transactional outbox pattern</li>
+          <li>S3-based object storage with presigned URL delivery</li>
+          <li>PostgreSQL schema with outbox, partial indexes, and auto-trigger</li>
+          <li>Docker Compose local environment with health checks</li>
+          <li>Kubernetes manifests with HPA for all services</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Patterns demonstrated</h3>
+        <ul>
+          <li>Transactional Outbox — reliable event delivery</li>
+          <li>At-least-once delivery with idempotent workers</li>
+          <li>Loose coupling — workers never call services over HTTP</li>
+          <li>Security-first file ingestion — pixel bomb protection</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; justify-content:center; gap:0.42em;">
+      <div class="highlight-box">
+        <p>The platform demonstrates that a small team can build a reliable, scalable distributed system by applying well-known patterns (outbox, prefetch, presigned URLs) rather than complex custom infrastructure.</p>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5em; text-align:center;">
+        <div class="card" style="font-size:0.72rem;"><div style="font-size:1.6rem;">2</div><div style="color:#34d399;">services done</div></div>
+        <div class="card" style="font-size:0.72rem;"><div style="font-size:1.6rem;">3</div><div style="color:#64748b;">to go</div></div>
+        <div class="card" style="font-size:0.72rem;"><div style="font-size:1.6rem;">6</div><div style="color:#a78bfa;">arch. decisions</div></div>
+        <div class="card" style="font-size:0.72rem;"><div style="font-size:1.6rem;">∞</div><div style="color:#4f9cf9;">horizontal scale</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 12 — QUESTIONS
+══════════════════════════════════════════════════════════ -->
+<section>
+  <div style="text-align:center; padding:1.5em 0 0;">
+    <div style="font-size:3rem; margin-bottom:0.4em;">🙋</div>
+    <h1>Questions?</h1>
+    <p style="color:#64748b; margin-top:0.4em; font-size:0.82rem;">Image Processing Platform · Engineering Thesis · 2026</p>
+    <div style="margin-top:0.8em; display:inline-grid; grid-template-columns:1fr 1fr; gap:0.9em; text-align:left; min-width:480px;">
+      <div class="card" style="font-size:0.69rem;">
+        <strong style="color:#34d399;">Stack</strong><br/>
+        <span style="color:#9ca3af;">Go · Python · PostgreSQL<br/>RabbitMQ · S3/MinIO · Kubernetes</span>
+      </div>
+      <div class="card" style="font-size:0.69rem;">
+        <strong style="color:#a78bfa;">Key patterns</strong><br/>
+        <span style="color:#9ca3af;">Transactional Outbox<br/>Async queue · Presigned URLs · HPA</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<script src="reveal.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'slide',
+    transitionSpeed: 'fast',
+    controls: true,
+    progress: true,
+    center: false,
+    width: 1280,
+    height: 720,
+    margin: 0.03,
+    disableLayout: false,
+  });
+</script>
+</body>
+</html>
