@@ -109,11 +109,26 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  # processing-worker:   # chapter 3
-  #   build:
-  #     context: ../services/processing-worker
-  #     dockerfile: Dockerfile
-  #   ...
+  processing-worker:
+    build:
+      context: ../services/processing-worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-image_platform}?sslmode=disable
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-guest}:${RABBITMQ_DEFAULT_PASS:-guest}@rabbitmq:5672/
+      MINIO_ENDPOINT: minio:8000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-accessKey1}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-verySecretKey1}
+      MINIO_USE_SSL: "false"
+      WORKER_LOG_LEVEL: ${WORKER_LOG_LEVEL:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   # frontend:   # chapter 4
   #   build:
