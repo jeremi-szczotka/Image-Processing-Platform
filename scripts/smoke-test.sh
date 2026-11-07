@@ -170,6 +170,41 @@ if [ -n "${JOB_RESP}" ]; then
     -d '{"image_id":"'"${IMAGE_ID}"'","operation":"explode"}')
   [ "${BAD_OP}" = "400" ] && ok "POST with invalid operation → 400" || \
     fail "Expected 400, got ${BAD_OP}"
+
+  # ── 12. Wait for job COMPLETED ────────────────────────────────────────────────
+  echo ""
+  echo "[ 12 ] Wait for job COMPLETED (up to 15s)"
+  if [ -n "${JOB_ID:-}" ]; then
+    COMPLETED=false
+    for i in $(seq 1 15); do
+      POLL_RESP=$(curl -sf "${JOB_URL}/api/v1/jobs/${JOB_ID}" 2>/dev/null) || break
+      POLL_STATUS=$(echo "${POLL_RESP}" | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])" 2>/dev/null) || break
+      if [ "${POLL_STATUS}" = "COMPLETED" ]; then
+        COMPLETED=true
+        break
+      fi
+      sleep 1
+    done
+    if [ "${COMPLETED}" = "true" ]; then
+      ok "job ${JOB_ID} → COMPLETED within 15s"
+    else
+      fail "job ${JOB_ID} did not reach COMPLETED (last status: ${POLL_STATUS:-unknown}) — is processing-worker running?"
+    fi
+
+    # ── 13. Verify result_object_key is set ─────────────────────────────────────
+    echo ""
+    echo "[ 13 ] Verify result metadata"
+    RESULT_RESP=$(curl -sf "${JOB_URL}/api/v1/jobs/${JOB_ID}") || { fail "GET job failed"; }
+    python3 - <<PYEOF
+import json, sys
+d = json.loads('''${RESULT_RESP}''')
+assert d["status"] == "COMPLETED", f"expected COMPLETED, got {d['status']}"
+assert d.get("result_object_key"), "result_object_key is missing"
+assert d.get("result_content_type"), "result_content_type is missing"
+assert d.get("result_file_size", 0) > 0, "result_file_size is 0 or missing"
+PYEOF
+    ok "job ${JOB_ID} → result_object_key=$(echo "${RESULT_RESP}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('result_object_key','?'))" 2>/dev/null)"
+  fi
 fi
 
 # ── Summary ───────────────────────────────────────────────────────────────────
