@@ -123,3 +123,15 @@ func TestDownloadResult_PresignError_Returns500(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
+
+func TestDownloadResult_CompletedJobNilObjectKey_Returns500(t *testing.T) {
+	repo := &mockJobResultRepo{result: &repository.JobResult{Status: "COMPLETED", ObjectKey: nil}}
+	h := newResultHandler(repo, &mockStorage{}, )
+
+	r := chiRouter(http.MethodGet, "/api/v1/jobs/{id}/result", h.DownloadResult)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/jobs/"+uuid.New().String()+"/result", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}

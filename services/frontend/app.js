@@ -52,12 +52,18 @@ async function handleFile(file) {
   previewImg.style.display = 'block';
 
   const meta = $('upload-meta');
-  meta.innerHTML = `
-    <span class="badge">${img.width} × ${img.height} px</span>
-    <span class="badge">${img.content_type}</span>
-    <span class="badge">${(img.file_size / 1024).toFixed(1)} KB</span>
-    <span class="badge">${img.original_filename}</span>
-  `;
+  meta.innerHTML = '';
+  [
+    `${img.width} × ${img.height} px`,
+    img.content_type,
+    `${(img.file_size / 1024).toFixed(1)} KB`,
+    img.original_filename,
+  ].forEach(text => {
+    const span = document.createElement('span');
+    span.className = 'badge';
+    span.textContent = text;
+    meta.appendChild(span);
+  });
   meta.classList.remove('hidden');
 
   $('btn-create-job').disabled = false;
@@ -183,12 +189,21 @@ async function showResult(job) {
   $('result-section').classList.remove('hidden');
 
   const resultUrl = `/api/v1/jobs/${job.id}/result`;
-  let finalUrl = resultUrl;
+  let finalUrl = null;
   try {
     const r = await fetch(resultUrl, { method: 'GET', redirect: 'follow' });
+    if (!r.ok) {
+      const msg = $('job-error-msg');
+      msg.textContent = `Could not load result (HTTP ${r.status})`;
+      msg.style.display = 'block';
+      return;
+    }
     finalUrl = r.url;
   } catch {
-    finalUrl = resultUrl;
+    const msg = $('job-error-msg');
+    msg.textContent = 'Network error loading result';
+    msg.style.display = 'block';
+    return;
   }
 
   const resultImg = $('result-img');

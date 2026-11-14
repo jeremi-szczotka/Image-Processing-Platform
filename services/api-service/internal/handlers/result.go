@@ -58,6 +58,12 @@ func (h *ResultHandler) DownloadResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if jr.ObjectKey == nil {
+		h.log.Error("completed job has no result_object_key", "id", id)
+		respondError(w, http.StatusInternalServerError, "result not available")
+		return
+	}
+
 	presignedURL, err := h.stor.PresignedDownloadURL(r.Context(), storage.BucketProcessed, *jr.ObjectKey, h.cfg.PresignedURLTTL)
 	if err != nil {
 		h.log.Error("presign result url", "err", err, "id", id)
