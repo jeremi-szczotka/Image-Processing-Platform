@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Image Processing Platform</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1>Image Processing Platform</h1>
+    <p>Upload an image, choose a transform, watch it process in real time.</p>
+  </header>
+
+  <!-- Step 1: Upload -->
+  <section class="card" id="section-upload">
+    <h2>1 · Upload image</h2>
+    <div class="drop-zone" id="drop-zone">
+      <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp"/>
+      <div id="drop-label">Drop an image here or <strong>click to browse</strong></div>
+      <div class="hint">JPEG · PNG · WebP — max 10 MB</div>
+    </div>
+    <img id="preview-img" class="preview-img" alt="preview"/>
+    <div id="upload-meta" class="meta-row hidden"></div>
+    <div id="upload-error" class="notice notice-error"></div>
+  </section>
+
+  <!-- Step 2: Create job -->
+  <section class="card hidden" id="section-job">
+    <h2>2 · Create processing job</h2>
+
+    <label for="op-select">Operation</label>
+    <select id="op-select">
+      <option value="resize">resize — scale to given width / height</option>
+      <option value="compress">compress — re-encode as JPEG</option>
+      <option value="convert">convert — change format</option>
+      <option value="grayscale">grayscale — remove colour</option>
+      <option value="edge_detection">edge detection — highlight edges</option>
+    </select>
+
+    <div id="params-resize" class="param-group visible">
+      <label for="param-width">Width (px, optional)</label>
+      <input type="number" id="param-width" min="1" max="8000" placeholder="e.g. 800"/>
+      <label for="param-height">Height (px, optional)</label>
+      <input type="number" id="param-height" min="1" max="8000" placeholder="leave blank to auto"/>
+    </div>
+
+    <div id="params-compress" class="param-group">
+      <label for="param-quality">Quality (1–95, default 85)</label>
+      <input type="number" id="param-quality" min="1" max="95" placeholder="85"/>
+    </div>
+
+    <div id="params-convert" class="param-group">
+      <label for="param-format">Target format</label>
+      <select id="param-format">
+        <option value="JPEG">JPEG</option>
+        <option value="PNG">PNG</option>
+        <option value="WEBP">WEBP</option>
+      </select>
+    </div>
+
+    <button class="btn btn-primary" id="btn-create-job" disabled>Start job</button>
+    <div id="job-error" class="notice notice-error"></div>
+  </section>
+
+  <!-- Step 3: Status + Result -->
+  <section class="card hidden" id="section-status">
+    <h2>3 · Job status</h2>
+    <div class="job-row">
+      <span class="label">Status</span>
+      <span id="job-status-badge" class="status-badge status-PENDING">PENDING</span>
+    </div>
+    <div class="job-row">
+      <span class="label">Job ID</span>
+      <span id="job-id-display" class="value">—</span>
+    </div>
+    <div class="job-row">
+      <span class="label">Operation</span>
+      <span id="job-op-display" class="value">—</span>
+    </div>
+    <div id="job-error-msg" class="notice notice-error"></div>
+
+    <div id="result-section" class="hidden" style="margin-top:1.25rem;">
+      <hr style="border-color:var(--border); margin-bottom:1.25rem;"/>
+      <h2>Result</h2>
+      <img id="result-img" class="result-img" alt="processed result"/>
+      <div style="margin-top:1rem; display:flex; gap:0.75rem; flex-wrap:wrap;">
+        <a id="btn-download-result" class="btn btn-primary" href="#" download>Download result</a>
+        <button id="btn-new-job" class="btn btn-secondary">New job (same image)</button>
+        <button id="btn-reset" class="btn btn-secondary">Start over</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+<script src="app.js" type="module"></script>
+</body>
+</html>
