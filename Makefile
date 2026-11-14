@@ -6,6 +6,7 @@ COMPOSE      = docker compose -f infrastructure/docker-compose.yml
 API_DIR      = services/api-service
 JOB_DIR      = services/job-service
 WORKER_DIR   = services/processing-worker
+FRONTEND_DIR = services/frontend
 
 help:
 	@echo ""
