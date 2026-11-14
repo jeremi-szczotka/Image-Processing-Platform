@@ -29,16 +29,20 @@ import (
 // ── Mock implementations ─────────────────────────────────────────────────────
 
 type mockStorage struct {
-	uploadErr  error
-	presignURL string
-	presignErr error
+	uploadErr   error
+	presignURL  string
+	presignErr  error
+	presignFunc func(bucket, key string)
 }
 
 func (m *mockStorage) Upload(_ context.Context, _, _ string, _ io.Reader, _ int64, _ string) error {
 	return m.uploadErr
 }
 
-func (m *mockStorage) PresignedDownloadURL(_ context.Context, _, _ string, _ time.Duration) (string, error) {
+func (m *mockStorage) PresignedDownloadURL(_ context.Context, bucket, key string, _ time.Duration) (string, error) {
+	if m.presignFunc != nil {
+		m.presignFunc(bucket, key)
+	}
 	return m.presignURL, m.presignErr
 }
 
