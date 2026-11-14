@@ -52,6 +52,9 @@ func main() {
 	imageRepo := repository.NewPostgresImageRepository(db)
 	imageHandler := handlers.NewImageHandler(imageRepo, minioStorage, cfg, log)
 
+	jobResultRepo := repository.NewPostgresJobResultRepository(db)
+	resultHandler := handlers.NewResultHandler(jobResultRepo, minioStorage, cfg, log)
+
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -62,6 +65,7 @@ func main() {
 		r.Post("/images", imageHandler.Upload)
 		r.Get("/images/{id}", imageHandler.GetByID)
 		r.Get("/images/{id}/download", imageHandler.Download)
+		r.Get("/jobs/{id}/result", resultHandler.DownloadResult)
 	})
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

@@ -29,17 +29,39 @@ import (
 // ── Mock implementations ─────────────────────────────────────────────────────
 
 type mockStorage struct {
-	uploadErr  error
-	presignURL string
-	presignErr error
+	uploadErr   error
+	presignURL  string
+	presignErr  error
+	presignFunc func(bucket, key string)
+	getObjData  []byte
+	getObjType  string
+	getObjErr   error
+	getObjFunc  func(bucket, key string)
 }
 
 func (m *mockStorage) Upload(_ context.Context, _, _ string, _ io.Reader, _ int64, _ string) error {
 	return m.uploadErr
 }
 
-func (m *mockStorage) PresignedDownloadURL(_ context.Context, _, _ string, _ time.Duration) (string, error) {
+func (m *mockStorage) PresignedDownloadURL(_ context.Context, bucket, key string, _ time.Duration) (string, error) {
+	if m.presignFunc != nil {
+		m.presignFunc(bucket, key)
+	}
 	return m.presignURL, m.presignErr
+}
+
+func (m *mockStorage) GetObject(_ context.Context, bucket, key string) (io.ReadCloser, string, error) {
+	if m.getObjFunc != nil {
+		m.getObjFunc(bucket, key)
+	}
+	if m.getObjErr != nil {
+		return nil, "", m.getObjErr
+	}
+	data := m.getObjData
+	if data == nil {
+		data = []byte{}
+	}
+	return io.NopCloser(bytes.NewReader(data)), m.getObjType, nil
 }
 
 type mockRepo struct {

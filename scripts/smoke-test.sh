@@ -207,6 +207,13 @@ PYEOF
   fi
 fi
 
+# ── 14. Frontend nginx health ─────────────────────────────────────────────
+echo ""
+echo "[ 14 ] Frontend nginx health"
+FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${FRONTEND_PORT:-3000}/healthz")
+[ "${FRONTEND_STATUS}" = "200" ] && ok "GET http://localhost:${FRONTEND_PORT:-3000}/healthz → 200 (via nginx proxy)" || \
+  fail "Expected 200 from nginx, got ${FRONTEND_STATUS} — is frontend running?"
+
 # ── Summary ───────────────────────────────────────────────────────────────────
 echo ""
 echo "────────────────────────────────────────"

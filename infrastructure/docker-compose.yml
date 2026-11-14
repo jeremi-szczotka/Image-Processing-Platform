@@ -130,11 +130,18 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  # frontend:   # chapter 4
-  #   build:
-  #     context: ../frontend
-  #     dockerfile: Dockerfile
-  #   ...
+  frontend:
+    build:
+      context: ../services/frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      api-service:
+        condition: service_started
+      job-service:
+        condition: service_started
 
 volumes:
   postgres_data:
