@@ -66,3 +66,18 @@ func (s *MinioStorage) PresignedDownloadURL(ctx context.Context, bucket, objectK
 	}
 	return u.String(), nil
 }
+
+// GetObject fetches bucket/objectKey and returns the object stream and its content type.
+// The caller must close the returned reader.
+func (s *MinioStorage) GetObject(ctx context.Context, bucket, objectKey string) (io.ReadCloser, string, error) {
+	obj, err := s.client.GetObject(ctx, bucket, objectKey, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, "", fmt.Errorf("get %s/%s: %w", bucket, objectKey, err)
+	}
+	info, err := obj.Stat()
+	if err != nil {
+		obj.Close()
+		return nil, "", fmt.Errorf("stat %s/%s: %w", bucket, objectKey, err)
+	}
+	return obj, info.ContentType, nil
+}

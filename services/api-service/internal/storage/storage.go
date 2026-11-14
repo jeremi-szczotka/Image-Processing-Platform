@@ -15,6 +15,9 @@ type Storage interface {
 	// PresignedDownloadURL returns a time-limited URL that a client can GET directly from object storage,
 	// valid for the duration specified by expiry.
 	PresignedDownloadURL(ctx context.Context, bucket, objectKey string, expiry time.Duration) (string, error)
+	// GetObject fetches an object from bucket and returns a read-closer, its content type, and any error.
+	// The caller is responsible for closing the returned reader.
+	GetObject(ctx context.Context, bucket, objectKey string) (io.ReadCloser, string, error)
 }
 
 const (

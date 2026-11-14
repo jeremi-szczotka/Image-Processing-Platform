@@ -156,14 +156,16 @@ function stopPolling() {
 }
 
 async function pollJob() {
-  if (!jobId) return;
+  const capturedId = jobId;
+  if (!capturedId) return;
   let resp;
   try {
-    resp = await fetch(`/api/v1/jobs/${jobId}`);
+    resp = await fetch(`/api/v1/jobs/${capturedId}`);
   } catch {
     return;
   }
   if (!resp.ok) return;
+  if (capturedId !== jobId) return;
 
   const job = await resp.json();
   updateStatusBadge(job.status);
@@ -185,34 +187,24 @@ function updateStatusBadge(status) {
   badge.className = `status-badge status-${status}`;
 }
 
-async function showResult(job) {
+function showResult(job) {
   $('result-section').classList.remove('hidden');
 
   const resultUrl = `/api/v1/jobs/${job.id}/result`;
-  let finalUrl = null;
-  try {
-    const r = await fetch(resultUrl, { method: 'GET', redirect: 'follow' });
-    if (!r.ok) {
-      const msg = $('job-error-msg');
-      msg.textContent = `Could not load result (HTTP ${r.status})`;
-      msg.style.display = 'block';
-      return;
-    }
-    finalUrl = r.url;
-  } catch {
-    const msg = $('job-error-msg');
-    msg.textContent = 'Network error loading result';
-    msg.style.display = 'block';
-    return;
-  }
 
   const resultImg = $('result-img');
-  resultImg.src   = finalUrl;
+  resultImg.src = resultUrl;
   resultImg.style.display = 'block';
+  resultImg.onerror = () => {
+    const msg = $('job-error-msg');
+    msg.textContent = 'Could not load result image';
+    msg.style.display = 'block';
+    resultImg.style.display = 'none';
+  };
 
   const dl = $('btn-download-result');
-  dl.href = finalUrl;
-  dl.download = `result_${job.id}.jpg`;
+  dl.href = `${resultUrl}?download=1`;
+  dl.download = `result_${job.id}`;
 }
 
 $('btn-new-job').addEventListener('click', () => {

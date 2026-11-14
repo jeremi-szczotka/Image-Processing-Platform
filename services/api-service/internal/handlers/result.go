@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 
@@ -14,7 +16,7 @@ import (
 	"image-platform/api-service/internal/storage"
 )
 
-// ResultHandler serves processed-image downloads via a presigned S3 redirect.
+// ResultHandler serves processed-image results, streaming bytes directly from object storage.
 type ResultHandler struct {
 	repo repository.JobResultRepository
 	stor storage.Storage
@@ -33,7 +35,9 @@ func NewResultHandler(
 }
 
 // DownloadResult handles GET /api/v1/jobs/{id}/result.
-// Returns 302 to a presigned S3 URL for the processed image when the job is COMPLETED.
+// Streams the processed image bytes from object storage with the correct Content-Type.
+// When ?download=1 is present, adds Content-Disposition: attachment so the browser
+// saves the file rather than displaying it.
 // Returns 409 when the job exists but is not yet COMPLETED. Returns 404 when not found.
 func (h *ResultHandler) DownloadResult(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
@@ -64,12 +68,40 @@ func (h *ResultHandler) DownloadResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	presignedURL, err := h.stor.PresignedDownloadURL(r.Context(), storage.BucketProcessed, *jr.ObjectKey, h.cfg.PresignedURLTTL)
+	reader, contentType, err := h.stor.GetObject(r.Context(), storage.BucketProcessed, *jr.ObjectKey)
 	if err != nil {
-		h.log.Error("presign result url", "err", err, "id", id)
-		respondError(w, http.StatusInternalServerError, "failed to generate result URL")
+		h.log.Error("get result object", "err", err, "id", id)
+		respondError(w, http.StatusInternalServerError, "failed to retrieve result")
 		return
 	}
+	defer reader.Close()
 
-	http.Redirect(w, r, presignedURL, http.StatusFound)
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+	w.Header().Set("Content-Type", contentType)
+
+	if r.URL.Query().Get("download") == "1" {
+		ext := extensionForContentType(contentType)
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="result%s"`, ext))
+	}
+
+	if _, err := io.Copy(w, reader); err != nil {
+		h.log.Error("stream result", "err", err, "id", id)
+	}
+}
+
+func extensionForContentType(ct string) string {
+	switch ct {
+	case "image/jpeg":
+		return ".jpg"
+	case "image/png":
+		return ".png"
+	case "image/gif":
+		return ".gif"
+	case "image/webp":
+		return ".webp"
+	default:
+		return ""
+	}
 }
