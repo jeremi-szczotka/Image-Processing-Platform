@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: processing-worker
+  namespace: image-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: processing-worker }
+  template:
+    metadata:
+      labels: { app: processing-worker }
+    spec:
+      initContainers:
+        # Buckets are created by api-service's EnsureBuckets on boot; the worker
+        # only put_objects and assumes they exist. Gate startup on api-service /healthz.
+        - name: wait-for-api
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until wget -q -T 2 -O /dev/null http://api-service:8080/healthz; do
+                echo "waiting for api-service (buckets)..."; sleep 2;
+              done
+      containers:
+        - name: processing-worker
+          image: image-platform/processing-worker:dev
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: platform-config }
+            - secretRef:    { name: platform-secrets }
