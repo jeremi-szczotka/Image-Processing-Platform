@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  namespace: image-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: minio }
+  template:
+    metadata:
+      labels: { app: minio }
+    spec:
+      containers:
+        - name: cloudserver
+          image: zenko/cloudserver:latest-7.70.10
+          ports:
+            - containerPort: 8000
+          env:
+            - name: S3BACKEND
+              value: "mem"
+            - name: REMOTE_MANAGEMENT_DISABLE
+              value: "1"
+            - name: ENDPOINT
+              value: "minio"
+          readinessProbe:
+            exec:
+              command:
+                - node
+                - -e
+                - "require('http').get('http://localhost:8000/',r=>process.exit(0)).on('error',()=>process.exit(1))"
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 30
