@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-config
+  namespace: image-platform
+data:
+  API_PORT: "8080"
+  JOB_SERVICE_PORT: "8081"
+  MINIO_ENDPOINT: "minio:8000"
+  MINIO_USE_SSL: "false"
+  MAX_UPLOAD_SIZE_MB: "10"
+  MAX_MEGAPIXELS: "50000000"
+  PRESIGNED_URL_TTL_MINUTES: "60"
+  OUTBOX_POLL_MS: "500"
+  WORKER_LOG_LEVEL: "INFO"
+  POSTGRES_DB: "image_platform"
+  POSTGRES_USER: "platform"

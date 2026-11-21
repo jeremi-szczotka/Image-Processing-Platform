@@ -1,7 +1,7 @@
 .PHONY: help setup dev dev-build dev-infra down logs \
         test test-unit test-integration lint build \
         smoke-test migrate-status \
-        k8s-create-cluster k8s-delete-cluster
+        k8s-create-cluster k8s-delete-cluster k8s-configmaps
 
 COMPOSE      = docker compose -f infrastructure/docker-compose.yml
 API_DIR      = services/api-service
@@ -89,3 +89,9 @@ k8s-create-cluster: ## Create the k3d cluster (Traefik on localhost:8088)
 
 k8s-delete-cluster: ## Delete the k3d cluster
 	- k3d cluster delete $(K3D_CLUSTER)
+
+k8s-configmaps: ## Regenerate the db-migrations ConfigMap from source SQL
+	kubectl create configmap db-migrations \
+	  --namespace $(K8S_NS) \
+	  --from-file=database/migrations/ \
+	  --dry-run=client -o yaml > $(K8S_DIR)/configmaps/db-migrations.yaml
