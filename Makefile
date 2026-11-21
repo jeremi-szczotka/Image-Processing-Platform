@@ -1,7 +1,8 @@
 .PHONY: help setup dev dev-build dev-infra down logs \
         test test-unit test-integration lint build \
         smoke-test migrate-status \
-        k8s-create-cluster k8s-delete-cluster k8s-configmaps k8s-secret k8s-build k8s-keda
+        k8s-create-cluster k8s-delete-cluster k8s-configmaps k8s-secret k8s-build k8s-keda \
+        k8s-up k8s-down k8s-status k8s-logs
 
 COMPOSE      = docker compose -f infrastructure/docker-compose.yml
 API_DIR      = services/api-service
@@ -121,3 +122,29 @@ k8s-keda: ## Install KEDA and metrics-server into the cluster
 	kubectl patch -n kube-system deployment metrics-server --type=json \
 	  -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
 	kubectl wait --for=condition=available deployment/keda-operator -n keda --timeout=180s
+
+k8s-up: k8s-create-cluster k8s-keda k8s-build ## Full bring-up: cluster → KEDA → images → manifests
+	kubectl apply -f $(K8S_DIR)/namespace.yaml
+	kubectl apply -f $(K8S_DIR)/configmaps/
+	$(MAKE) k8s-secret
+	kubectl apply -f $(K8S_DIR)/deployments/postgres.yaml -f $(K8S_DIR)/services/postgres.yaml
+	kubectl apply -f $(K8S_DIR)/deployments/rabbitmq.yaml -f $(K8S_DIR)/services/rabbitmq.yaml
+	kubectl apply -f $(K8S_DIR)/deployments/minio.yaml    -f $(K8S_DIR)/services/minio.yaml
+	kubectl wait --for=condition=available deployment/postgres deployment/rabbitmq deployment/minio -n $(K8S_NS) --timeout=180s
+	kubectl apply -f $(K8S_DIR)/deployments/api-service.yaml -f $(K8S_DIR)/services/api-service.yaml
+	kubectl apply -f $(K8S_DIR)/deployments/job-service.yaml -f $(K8S_DIR)/services/job-service.yaml
+	kubectl wait --for=condition=available deployment/api-service deployment/job-service -n $(K8S_NS) --timeout=180s
+	kubectl apply -f $(K8S_DIR)/deployments/processing-worker.yaml
+	kubectl apply -f $(K8S_DIR)/deployments/frontend.yaml -f $(K8S_DIR)/services/frontend.yaml
+	kubectl apply -f $(K8S_DIR)/services/ingress.yaml
+	kubectl apply -f $(K8S_DIR)/autoscaling/
+	kubectl wait --for=condition=available deployment/frontend deployment/processing-worker -n $(K8S_NS) --timeout=180s
+	@echo "Platform up → http://localhost:8088"
+
+k8s-down: k8s-delete-cluster ## Tear down the whole cluster
+
+k8s-status: ## Show pods, services, HPA, ScaledObject
+	kubectl get pods,svc,hpa,scaledobject -n $(K8S_NS)
+
+k8s-logs: ## Tail processing-worker logs
+	kubectl logs -f -n $(K8S_NS) deploy/processing-worker
