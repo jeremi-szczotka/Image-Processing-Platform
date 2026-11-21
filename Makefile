@@ -1,12 +1,18 @@
 .PHONY: help setup dev dev-build dev-infra down logs \
         test test-unit test-integration lint build \
-        smoke-test migrate-status
+        smoke-test migrate-status \
+        k8s-create-cluster k8s-delete-cluster
 
 COMPOSE      = docker compose -f infrastructure/docker-compose.yml
 API_DIR      = services/api-service
 JOB_DIR      = services/job-service
 WORKER_DIR   = services/processing-worker
 FRONTEND_DIR = services/frontend
+
+# ── Kubernetes (chapter 5) ──────────────────────────────────────────────────
+K3D_CLUSTER := image-platform
+K8S_DIR     := infrastructure/kubernetes
+K8S_NS      := image-platform
 
 help:
 	@echo ""
@@ -72,3 +78,14 @@ test-integration: smoke-test
 
 smoke-test:
 	@bash scripts/smoke-test.sh
+
+# ── Kubernetes targets (chapter 5) ──────────────────────────────────────────
+k8s-create-cluster: ## Create the k3d cluster (Traefik on localhost:8088)
+	k3d cluster create $(K3D_CLUSTER) \
+	  --port "8088:80@loadbalancer" \
+	  --agents 1 \
+	  --wait
+	kubectl config use-context k3d-$(K3D_CLUSTER)
+
+k8s-delete-cluster: ## Delete the k3d cluster
+	- k3d cluster delete $(K3D_CLUSTER)
