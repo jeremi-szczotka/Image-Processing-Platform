@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: job-service
+  namespace: image-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: job-service }
+  template:
+    metadata:
+      labels: { app: job-service }
+    spec:
+      containers:
+        - name: job-service
+          image: image-platform/job-service:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8081
+          envFrom:
+            - configMapRef: { name: platform-config }
+            - secretRef:    { name: platform-secrets }
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8081 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8081 }
+            initialDelaySeconds: 10
+            periodSeconds: 10

@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-service
+  namespace: image-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: api-service }
+  template:
+    metadata:
+      labels: { app: api-service }
+    spec:
+      containers:
+        - name: api-service
+          image: image-platform/api-service:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef: { name: platform-config }
+            - secretRef:    { name: platform-secrets }
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 10

@@ -1,7 +1,7 @@
 .PHONY: help setup dev dev-build dev-infra down logs \
         test test-unit test-integration lint build \
         smoke-test migrate-status \
-        k8s-create-cluster k8s-delete-cluster k8s-configmaps k8s-secret
+        k8s-create-cluster k8s-delete-cluster k8s-configmaps k8s-secret k8s-build
 
 COMPOSE      = docker compose -f infrastructure/docker-compose.yml
 API_DIR      = services/api-service
@@ -99,3 +99,16 @@ k8s-configmaps: ## Regenerate the db-migrations ConfigMap from source SQL
 k8s-secret: ## Create the real secret from the template on first run, then apply it
 	@test -f $(K8S_DIR)/secrets.yaml || cp $(K8S_DIR)/secrets.example/platform-secrets.example.yaml $(K8S_DIR)/secrets.yaml
 	kubectl apply -f $(K8S_DIR)/secrets.yaml
+
+IMG_TAG := dev
+k8s-build: ## Build the four service images and import them into k3d
+	docker build -t image-platform/api-service:$(IMG_TAG)        services/api-service
+	docker build -t image-platform/job-service:$(IMG_TAG)        services/job-service
+	docker build -t image-platform/processing-worker:$(IMG_TAG)  services/processing-worker
+	docker build -t image-platform/frontend:$(IMG_TAG)           services/frontend
+	k3d image import \
+	  image-platform/api-service:$(IMG_TAG) \
+	  image-platform/job-service:$(IMG_TAG) \
+	  image-platform/processing-worker:$(IMG_TAG) \
+	  image-platform/frontend:$(IMG_TAG) \
+	  -c $(K3D_CLUSTER)
