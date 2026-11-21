@@ -1,7 +1,7 @@
 .PHONY: help setup dev dev-build dev-infra down logs \
         test test-unit test-integration lint build \
         smoke-test migrate-status \
-        k8s-create-cluster k8s-delete-cluster k8s-configmaps
+        k8s-create-cluster k8s-delete-cluster k8s-configmaps k8s-secret
 
 COMPOSE      = docker compose -f infrastructure/docker-compose.yml
 API_DIR      = services/api-service
@@ -95,3 +95,7 @@ k8s-configmaps: ## Regenerate the db-migrations ConfigMap from source SQL
 	  --namespace $(K8S_NS) \
 	  --from-file=database/migrations/ \
 	  --dry-run=client -o yaml > $(K8S_DIR)/configmaps/db-migrations.yaml
+
+k8s-secret: ## Create the real secret from the template on first run, then apply it
+	@test -f $(K8S_DIR)/secrets.yaml || cp $(K8S_DIR)/secrets.example/platform-secrets.example.yaml $(K8S_DIR)/secrets.yaml
+	kubectl apply -f $(K8S_DIR)/secrets.yaml
