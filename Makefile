@@ -1,7 +1,7 @@
 .PHONY: help setup dev dev-build dev-infra down logs \
         test test-unit test-integration lint build \
         smoke-test migrate-status \
-        k8s-create-cluster k8s-delete-cluster k8s-configmaps k8s-secret k8s-build
+        k8s-create-cluster k8s-delete-cluster k8s-configmaps k8s-secret k8s-build k8s-keda
 
 COMPOSE      = docker compose -f infrastructure/docker-compose.yml
 API_DIR      = services/api-service
@@ -112,3 +112,12 @@ k8s-build: ## Build the four service images and import them into k3d
 	  image-platform/processing-worker:$(IMG_TAG) \
 	  image-platform/frontend:$(IMG_TAG) \
 	  -c $(K3D_CLUSTER)
+
+KEDA_VERSION := 2.21.1
+k8s-keda: ## Install KEDA and metrics-server into the cluster
+	kubectl apply --server-side -f https://github.com/kedacore/keda/releases/download/v$(KEDA_VERSION)/keda-$(KEDA_VERSION).yaml
+	kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+	# k3d/k3s kubelet serving cert is self-signed; allow metrics-server to trust it.
+	kubectl patch -n kube-system deployment metrics-server --type=json \
+	  -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+	kubectl wait --for=condition=available deployment/keda-operator -n keda --timeout=180s
