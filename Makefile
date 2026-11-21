@@ -115,9 +115,10 @@ k8s-build: ## Build the four service images and import them into k3d
 	  -c $(K3D_CLUSTER)
 
 KEDA_VERSION := 2.21.1
+METRICS_SERVER_VERSION := 0.9.1
 k8s-keda: ## Install KEDA and metrics-server into the cluster
 	kubectl apply --server-side -f https://github.com/kedacore/keda/releases/download/v$(KEDA_VERSION)/keda-$(KEDA_VERSION).yaml
-	kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+	kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v$(METRICS_SERVER_VERSION)/components.yaml
 	# k3d/k3s kubelet serving cert is self-signed; allow metrics-server to trust it.
 	kubectl patch -n kube-system deployment metrics-server --type=json \
 	  -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'

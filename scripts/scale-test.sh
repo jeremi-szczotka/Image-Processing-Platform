@@ -10,6 +10,13 @@ NS="image-platform"
 BATCH="${BATCH:-120}"
 SCALER="processing-worker-scaler"
 
+restore_bounds() {  # always re-enable autoscaling, even if a run aborts mid-loop
+  echo "Restoring autoscaling bounds (min=1,max=8)…"
+  kubectl patch scaledobject "$SCALER" -n "$NS" --type=merge \
+    -p '{"spec":{"minReplicaCount":1,"maxReplicaCount":8}}' >/dev/null || true
+}
+trap restore_bounds EXIT
+
 pin() {  # pin worker replicas to $1 via the ScaledObject bounds
   kubectl patch scaledobject "$SCALER" -n "$NS" --type=merge \
     -p "{\"spec\":{\"minReplicaCount\":$1,\"maxReplicaCount\":$1}}" >/dev/null
@@ -62,7 +69,4 @@ done
 
 echo ""
 echo "Results CSV:"; cat /tmp/scale_results.csv
-echo ""
-echo "Restoring autoscaling bounds (min=1,max=8)…"
-kubectl patch scaledobject "$SCALER" -n "$NS" --type=merge \
-  -p '{"spec":{"minReplicaCount":1,"maxReplicaCount":8}}' >/dev/null
+# Autoscaling bounds are restored by the EXIT trap (restore_bounds).
