@@ -2,7 +2,7 @@
         test test-unit test-integration lint build \
         smoke-test migrate-status \
         k8s-create-cluster k8s-delete-cluster k8s-configmaps k8s-secret k8s-build k8s-keda \
-        k8s-up k8s-down k8s-status k8s-logs k8s-smoke
+        k8s-up k8s-down k8s-status k8s-logs k8s-smoke scale-test
 
 COMPOSE      = docker compose -f infrastructure/docker-compose.yml
 API_DIR      = services/api-service
@@ -151,3 +151,6 @@ k8s-logs: ## Tail processing-worker logs
 
 k8s-smoke: ## End-to-end smoke test through the Ingress
 	BASE_URL=http://localhost:8088 bash scripts/k8s-smoke.sh
+
+scale-test: ## Run the 1/2/4-worker scaling experiment (writes /tmp/scale_results.csv)
+	BASE_URL=http://localhost:8088 bash scripts/scale-test.sh
