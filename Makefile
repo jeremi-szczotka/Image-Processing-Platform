@@ -2,7 +2,7 @@
         test test-unit test-integration lint build \
         smoke-test migrate-status \
         k8s-create-cluster k8s-delete-cluster k8s-configmaps k8s-secret k8s-build k8s-keda \
-        k8s-up k8s-down k8s-status k8s-logs
+        k8s-up k8s-down k8s-status k8s-logs k8s-smoke
 
 COMPOSE      = docker compose -f infrastructure/docker-compose.yml
 API_DIR      = services/api-service
@@ -148,3 +148,6 @@ k8s-status: ## Show pods, services, HPA, ScaledObject
 
 k8s-logs: ## Tail processing-worker logs
 	kubectl logs -f -n $(K8S_NS) deploy/processing-worker
+
+k8s-smoke: ## End-to-end smoke test through the Ingress
+	BASE_URL=http://localhost:8088 bash scripts/k8s-smoke.sh
