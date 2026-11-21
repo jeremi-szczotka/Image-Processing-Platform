@@ -1,0 +1,10 @@
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-trigger-auth-rabbitmq
+  namespace: image-platform
+spec:
+  secretTargetRef:
+    - parameter: host
+      name: platform-secrets
+      key: RABBITMQ_AMQP_URL

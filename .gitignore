@@ -47,3 +47,6 @@ tests/load/results/
 CLAUDE.md
 # Thesis implementation plan (internal working document)
 plan_implementacji_platformy_przetwarzania_obrazow.md
+
+# Real K8s secret (template lives in secrets.example/)
+infrastructure/kubernetes/secrets.yaml
